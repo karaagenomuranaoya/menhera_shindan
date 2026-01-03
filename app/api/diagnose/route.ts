@@ -48,7 +48,18 @@ export async function POST(req: Request) {
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
-    const json: DiagnosisResult = JSON.parse(responseText);
+    
+    // --- 修正箇所: Markdown記号(```json ... ```)を取り除く処理 ---
+    const cleanedText = responseText.replace(/```json|```/g, "").trim();
+    
+    let json: DiagnosisResult;
+    try {
+      json = JSON.parse(cleanedText);
+    } catch (e) {
+      console.error("JSON Parse Error:", responseText);
+      return NextResponse.json({ error: "AIの応答形式エラー" }, { status: 500 });
+    }
+    // -----------------------------------------------------------
 
     return NextResponse.json(json);
 

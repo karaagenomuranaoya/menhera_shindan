@@ -45,7 +45,7 @@ export default function Home() {
           Aim for the<br />Menhera King
         </h1>
 
-        {/* Step 0 ~ 4 は変更なし（そのまま使えます） */}
+        {/* Step 0 ~ 4 は変更なし */}
         {step === 0 && (
           <div className="text-center space-y-6">
             <p className="text-gray-300">あなたの愛は、凶器か、芸術か。<br/>AIがあなたの「重さ」を測定します。</p>
@@ -83,7 +83,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Step 5: 結果発表（ここを拡張！） */}
+        {/* Step 5: 結果発表 */}
         {step === 5 && result && (
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }} 
@@ -101,27 +101,27 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 修正後: これに書き換えてください */}
-<div className="grid grid-cols-3 gap-2 text-xs">
-  <div className="bg-gray-800 p-2 rounded">
-    <div className="text-gray-400">湿度</div>
-    <div className="text-lg font-bold text-blue-400">
-      {result.chart?.humidity ?? 0}%
-    </div>
-  </div>
-  <div className="bg-gray-800 p-2 rounded">
-    <div className="text-gray-400">圧</div>
-    <div className="text-lg font-bold text-red-500">
-      {result.chart?.pressure ?? 0}%
-    </div>
-  </div>
-  <div className="bg-gray-800 p-2 rounded">
-    <div className="text-gray-400">妄想</div>
-    <div className="text-lg font-bold text-purple-400">
-      {result.chart?.delusion ?? 0}%
-    </div>
-  </div>
-</div>
+            {/* チャート表示（修正: オプショナルチェーンとデフォルト値を追加） */}
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="bg-gray-800 p-2 rounded">
+                <div className="text-gray-400">湿度</div>
+                <div className="text-lg font-bold text-blue-400">
+                  {result.chart?.humidity ?? 0}%
+                </div>
+              </div>
+              <div className="bg-gray-800 p-2 rounded">
+                <div className="text-gray-400">圧</div>
+                <div className="text-lg font-bold text-red-500">
+                  {result.chart?.pressure ?? 0}%
+                </div>
+              </div>
+              <div className="bg-gray-800 p-2 rounded">
+                <div className="text-gray-400">妄想</div>
+                <div className="text-lg font-bold text-purple-400">
+                  {result.chart?.delusion ?? 0}%
+                </div>
+              </div>
+            </div>
 
             {/* ハイライト */}
             <div className="text-left bg-[#252525] p-4 rounded-xl border-l-4 border-pink-500">
@@ -134,7 +134,7 @@ export default function Home() {
               {result.comment}
             </p>
 
-            {/* --- ここから追加：各回答への個別レビュー --- */}
+            {/* --- 各回答への個別レビュー（修正: エラー回避処理を追加） --- */}
             <div className="mt-6 text-left space-y-3 pt-6 border-t border-gray-800">
               <h3 className="text-xs font-bold text-gray-500 uppercase">Review Log</h3>
               
@@ -144,7 +144,7 @@ export default function Home() {
                     <span>Q1: 既読無視</span>
                  </div>
                  <p className="text-gray-300 mb-2 border-l-2 border-gray-600 pl-2">"{answers.q1}"</p>
-                 <p className="text-pink-400 font-bold text-xs">師範代: {result.short_reviews[0]}</p>
+                 <p className="text-pink-400 font-bold text-xs">師範代: {result.short_reviews?.[0] ?? "コメントなし"}</p>
               </div>
 
               {/* Q2のレビュー */}
@@ -153,7 +153,7 @@ export default function Home() {
                     <span>Q2: 深夜のポエム</span>
                  </div>
                  <p className="text-gray-300 mb-2 border-l-2 border-gray-600 pl-2">"{answers.q2}"</p>
-                 <p className="text-pink-400 font-bold text-xs">師範代: {result.short_reviews[1]}</p>
+                 <p className="text-pink-400 font-bold text-xs">師範代: {result.short_reviews?.[1] ?? "コメントなし"}</p>
               </div>
 
                {/* Q3のレビュー */}
@@ -162,10 +162,9 @@ export default function Home() {
                     <span>Q3: 浮気牽制</span>
                  </div>
                  <p className="text-gray-300 mb-2 border-l-2 border-gray-600 pl-2">"{answers.q3}"</p>
-                 <p className="text-pink-400 font-bold text-xs">師範代: {result.short_reviews[2]}</p>
+                 <p className="text-pink-400 font-bold text-xs">師範代: {result.short_reviews?.[2] ?? "コメントなし"}</p>
               </div>
             </div>
-            {/* --- 追加ここまで --- */}
 
             <button 
               onClick={() => { setStep(0); setAnswers({q1:"", q2:"", q3:""}); }}
