@@ -22,14 +22,14 @@ export async function POST(req: Request) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       generationConfig: { responseMimeType: "application/json" },
     });
 
     // プロンプトに short_reviews の指示を追加
     const prompt = `
-      あなたは「メンヘラ界の伝説的な師範代」です。
-      以下のユーザーのLINEメッセージを解析し、メンヘラ度を診断してください。
+      あなたは「メンヘラ界のカリスマ」です。
+      以下のユーザーのLINEメッセージを解析し、メンヘラ度を厳しく診断してください。
 
       ## ユーザーの回答
       Q1(既読無視への追撃): ${q1}
@@ -37,11 +37,11 @@ export async function POST(req: Request) {
       Q3(浮気疑惑への牽制): ${q3}
 
       ## 出力ルール (JSON)
-      - score: 0〜100の整数
+      - score: 0〜100の整数（厳しくつける。意味をなさないものにはメンヘラを舐めるなと言わんばかりに躊躇なく0点をつける。一方で心と闇のこもったメンヘラには高得点をつける。）
       - title: 短い称号
       - chart: { "humidity": 0〜100, "pressure": 0〜100, "delusion": 0〜100 }
       - highlight_quote: 最も狂気を感じる一文を抜粋
-      - comment: 師範代からの総評 (100文字程度)
+      - comment: カリスマからの総評 (100文字程度)
       - short_reviews: ["Q1への辛辣な一言寸評", "Q2への辛辣な一言寸評", "Q3への辛辣な一言寸評"] 
         (配列として3つ必ず出力すること)
     `;
