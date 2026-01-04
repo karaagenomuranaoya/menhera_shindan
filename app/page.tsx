@@ -7,7 +7,7 @@ const QUESTION_CANDIDATES = [
   "彼から5時間返信がない。追いLINEするなら？",
   "深夜2時。溢れ出した情緒をそのままメッセージにしてぶつけて。",
   "彼の浮気疑惑。釘を刺す決定的な一言をどうぞ。",
-  "彼が他の女の子の投稿に「いいね」してた。どう詰める？",
+  "彼のが他の女の子の投稿に「いいね」してた。どう詰める？",
   "「もう疲れた」と言われた時の、彼を逃がさないための一言。"
 ];
 
@@ -137,6 +137,13 @@ export default function Home() {
 
             {/* 質問・回答・総評セクション */}
             <div className="space-y-6 text-left px-2 border-t border-purple-100 pt-6">
+              {/* スコア表示をランクと同じスタイルで追加 */}
+              <div className="text-center mb-4">
+                <div className="text-6xl font-black text-pink-400 drop-shadow-[0_4px_10px_rgba(244,114,182,0.3)] italic">
+                  Score : {result.score}
+                </div>
+              </div>
+
               <div className="space-y-1">
                 <span className="text-[10px] font-black text-purple-300 uppercase tracking-widest">Question</span>
                 <p className="text-xs text-purple-800 font-medium leading-relaxed">{selectedQuestion}</p>
