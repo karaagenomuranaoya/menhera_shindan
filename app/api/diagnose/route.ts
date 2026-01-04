@@ -63,7 +63,7 @@ export async function POST(req: Request) {
         "chart": { "humidity": 0〜100, "pressure": 0〜100, "delusion": 0〜100 },
         "highlight_quote": "最も魂を揺さぶられた一文",
         "comment": "同志としての深く痛いほど共鳴する総評(100文字程度)",
-        "short_reviews": ["Q1への共鳴寸評", "Q2への共鳴寸評", "Q3への共鳴寸評"]
+        "short_reviews": ["コメント1", "コメント2", "コメント3"]
       }
     `;
 

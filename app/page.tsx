@@ -43,7 +43,7 @@ export default function Home() {
       <div className="w-full max-w-md bg-black/60 p-6 rounded-3xl border border-purple-500/30 shadow-[0_0_50px_rgba(168,85,247,0.2)] backdrop-blur-md">
         
         <h1 className="text-2xl font-black text-center mb-8 tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-white to-purple-500">
-          MENHERA KING<br/><span className="text-sm font-normal text-purple-400">メンヘラ格付け診断</span>
+          メンヘラ診断<br/><span className="text-sm font-normal text-purple-400">Menhera Diagnosis</span>
         </h1>
 
         {step === 0 && (
