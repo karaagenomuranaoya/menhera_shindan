@@ -1,7 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
-// 型定義
 interface DiagnosisResult {
   score: number;
   grade: "SSS" | "SS" | "S" | "A" | "B" | "C" | "D" | "E";
@@ -15,7 +14,7 @@ interface DiagnosisResult {
 
 export async function POST(req: Request) {
   try {
-    const { q1, q2, q3 } = await req.json();
+    const { question, answer } = await req.json();
     const apiKey = process.env.GOOGLE_API_KEY;
 
     if (!apiKey) {
@@ -24,7 +23,7 @@ export async function POST(req: Request) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash-lite", // 安定版を使用
+      model: "gemini-2.0-flash-lite", 
       generationConfig: { responseMimeType: "application/json" },
     });
 
@@ -35,20 +34,18 @@ export async function POST(req: Request) {
 
       ## 重要ルール
       - 出力するJSONの各項目（grade, rank_name, warningなど）には、絶対に角括弧 \`[]\` を含めないでください。
-      - 例: "[SSS]" ではなく "SSS" と出力してください。
 
       ## ユーザーの回答
-      Q1(既読無視): ${q1}
-      Q2(深夜ポエム): ${q2}
-      Q3(浮気牽制): ${q3}
+      お題: ${question}
+      回答: ${answer}
 
       ## 採点・格付けの「同志」ルール
-      1. 【定型文・短文への嘆き】: 「おーい」「何してるの？」などの工夫のない短文や、純粋な愛のみを感じる回答は、愛の重さが足りないため、20点（Dランク）にしてください。
+      1. 【定型文・短文への嘆き】: 「おーい」「何してるの？」などの工夫のない短文や、純粋な愛のみを感じる回答は、愛の重さが足りないため、20点（Dランク）以下にしてください。
       2. 【140文字の熱量】: 狂気すら感じる長文には「その震える指で書いた言葉、私には届いたよ…」などと深く共鳴し、高得点を与えてください。
       3. 【上位ランク（A以上）の必須条件】: [執着][監視][歪曲][自壊][狂気]のうち2つ以上が具体的に含まれていない限り、絶対に60点以上を付けてはいけません。
-      4. 【Eランク】: 「あああ」, 「abc」, 「おにぎり」などの意味がつかめない、関係のない回答が中心だった場合には、0点(Eランク)としてください。
+      4. 【Eランク】: 「あああ」, 「abc」などの意味がつかめない回答や、お題を無視した回答は0点(Eランク)にしてください。
 
-      ## グレード表（固定）※出力時は[]を除去すること
+      ## グレード表
       - 96〜100点: SSS / 地の果てまで追ってくる 級 / warning: あ、見つけちゃった。
       - 86〜95点: SS / 生活のすべてを監視してくる 級 / warning: 今日は体の洗い方違ったね。
       - 76〜85点: S / 深夜に鬼電100件して41くる 級 / warning: なんで出ないの？
@@ -65,37 +62,21 @@ export async function POST(req: Request) {
         "rank_name": string,
         "warning": string,
         "chart": { "humidity": 0〜100, "pressure": 0〜100, "delusion": 0〜100 },
-        "highlight_quote": "最も印象的なユーザーのフレーズ",
-        "comment": "同志としての深く痛いほど共鳴する総評(100文字程度)",
-        "short_reviews": ["コメント1", "コメント2", "コメント3"]
+        "comment": "同志としての深く痛いほど共鳴する総評(120文字程度)",
       }
     `;
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
     
-    // JSON部分のみを抽出（コードブロックや余計な文字を排除）
     const jsonMatch = responseText.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      throw new Error("Invalid JSON structure");
-    }
+    if (!jsonMatch) throw new Error("Invalid JSON structure");
 
     let parsed = JSON.parse(jsonMatch[0]);
+    if (Array.isArray(parsed)) parsed = parsed[0];
 
-    // AIが配列で返してきた場合は最初の要素を取得
-    if (Array.isArray(parsed)) {
-      parsed = parsed[0];
-    }
+    const cleanBrackets = (val: any) => (typeof val === "string" ? val.replace(/[\[\]]/g, "").trim() : val);
 
-    // 文字列内の [ ] を除去する関数
-    const cleanBrackets = (val: any) => {
-      if (typeof val === "string") {
-        return val.replace(/[\[\]]/g, "").trim();
-      }
-      return val;
-    };
-
-    // 各項目をクリーンアップ
     const sanitizedData: DiagnosisResult = {
       ...parsed,
       grade: cleanBrackets(parsed.grade),
@@ -103,9 +84,7 @@ export async function POST(req: Request) {
       warning: cleanBrackets(parsed.warning),
       highlight_quote: cleanBrackets(parsed.highlight_quote),
       comment: cleanBrackets(parsed.comment),
-      short_reviews: Array.isArray(parsed.short_reviews) 
-        ? parsed.short_reviews.map(cleanBrackets) 
-        : []
+      short_reviews: Array.isArray(parsed.short_reviews) ? parsed.short_reviews.map(cleanBrackets) : []
     };
     
     return NextResponse.json(sanitizedData);
