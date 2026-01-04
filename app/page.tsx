@@ -2,14 +2,15 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 
-// 型定義更新
 type DiagnosisResult = {
   score: number;
-  title: string;
+  grade: string;
+  rank_name: string;
+  warning: string;
   chart: { humidity: number; pressure: number; delusion: number };
   highlight_quote: string;
   comment: string;
-  short_reviews: string[]; // ← 追加
+  short_reviews: string[];
 };
 
 export default function Home() {
@@ -32,145 +33,123 @@ export default function Home() {
       setResult(data);
       setStep(5);
     } catch (e) {
-      alert("診断エラー！もう一度試してね");
+      alert("診断エラー！");
       setStep(3);
     }
   };
 
   return (
-    <main className="min-h-screen bg-[#1a1a1a] text-white flex flex-col items-center justify-center p-4 font-sans">
-      <div className="w-full max-w-md bg-black/50 p-6 rounded-2xl border border-purple-900/50 shadow-2xl backdrop-blur-sm overflow-hidden">
+    <main className="min-h-screen bg-[#0f0f0f] text-white flex flex-col items-center justify-center p-4 font-sans">
+      <div className="w-full max-w-md bg-black/60 p-6 rounded-3xl border border-purple-500/30 shadow-[0_0_50px_rgba(168,85,247,0.2)] backdrop-blur-md">
         
-        <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 text-center mb-8">
-          Aim for the<br />Menhera King
+        <h1 className="text-2xl font-black text-center mb-8 tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-white to-purple-500">
+          MENHERA KING<br/><span className="text-sm font-normal text-purple-400">メンヘラ格付け診断</span>
         </h1>
 
-        {/* Step 0 ~ 4 は変更なし */}
         {step === 0 && (
           <div className="text-center space-y-6">
-            <p className="text-gray-300">あなたの愛は、凶器か、芸術か。<br/>AIがあなたの「重さ」を測定します。</p>
-            <button onClick={() => setStep(1)} className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full font-bold text-lg hover:opacity-90 transition">診断を始める</button>
+            <p className="text-gray-400 text-sm leading-relaxed">あなたの愛の重さを、<br/>メンヘラ界のカリスマが格付けします。</p>
+            <button onClick={() => setStep(1)} className="w-full py-4 bg-purple-600 rounded-2xl font-bold hover:bg-purple-500 transition-all shadow-lg shadow-purple-500/20">入室する</button>
           </div>
         )}
 
         {[1, 2, 3].includes(step) && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-            <div className="bg-gray-800 p-3 rounded-lg rounded-tl-none inline-block max-w-[85%] text-sm">
-              {step === 1 && "彼から5時間返信がない（既読はついてる）。なんて送る？"}
-              {step === 2 && "深夜2時。急に情緒が不安定になった。彼にLINE送っちゃおう。"}
-              {step === 3 && "最近、彼の様子がおかしい（浮気？）。釘を刺す一言を送って。"}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+            <div className="text-xs text-purple-400 font-bold mb-1">QUESTION 0{step}</div>
+            <div className="bg-gray-800/50 p-4 rounded-2xl rounded-tl-none text-sm border border-gray-700">
+              {step === 1 && "彼から5時間返信がない。追いLINEするなら？"}
+              {step === 2 && "深夜2時。溢れ出した情緒をぶつけて。"}
+              {step === 3 && "彼の浮気疑惑。釘を刺す決定的な一言。"}
             </div>
             <textarea
-              className="w-full bg-[#2a2a2a] border border-gray-700 rounded-xl p-4 text-white focus:outline-none focus:border-pink-500 min-h-[120px]"
-              placeholder="ここにメッセージを入力..."
+              className="w-full bg-transparent border border-gray-800 rounded-2xl p-4 text-white focus:outline-none focus:border-pink-500 min-h-[120px] transition-colors"
+              placeholder="メッセージを入力..."
               value={step === 1 ? answers.q1 : step === 2 ? answers.q2 : answers.q3}
               onChange={(e) => handleInput(`q${step}`, e.target.value)}
             />
             <button
               onClick={() => step < 3 ? setStep(step + 1) : analyze()}
-              className="w-full py-3 bg-purple-700 rounded-xl font-bold mt-2 disabled:opacity-50"
+              className="w-full py-3 bg-white text-black rounded-2xl font-black disabled:opacity-20"
               disabled={!answers[`q${step}` as keyof typeof answers]}
             >
-              {step < 3 ? "次へ送信 ▷" : "診断する 🔥"}
+              {step < 3 ? "次へ進む" : "格付けを仰ぐ"}
             </button>
           </motion.div>
         )}
 
         {step === 4 && (
-          <div className="text-center py-10 space-y-4">
-            <div className="animate-pulse text-pink-500 text-xl font-bold">診断中...</div>
-            <p className="text-xs text-gray-500">既読がついたり消えたりしています</p>
+          <div className="text-center py-20">
+            <div className="animate-spin inline-block w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full mb-4"></div>
+            <p className="text-pink-500 font-bold animate-pulse">精神を解析中...</p>
           </div>
         )}
 
-        {/* Step 5: 結果発表 */}
         {step === 5 && result && (
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }} 
-            animate={{ scale: 1, opacity: 1 }}
-            className="space-y-6 text-center"
-          >
-            {/* 総合評価エリア */}
-            <div>
-              <p className="text-sm text-purple-400">メンヘラ偏差値</p>
-              <div className="text-7xl font-black text-pink-500 tracking-tighter drop-shadow-[0_0_15px_rgba(236,72,153,0.5)]">
-                {result.score}
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="space-y-8 text-center">
+            {/* メイン格付け表示 */}
+            <div className="space-y-2">
+              <div className="text-sm text-purple-400 tracking-widest font-bold">GRADE</div>
+              <div className="text-8xl font-black text-pink-500 drop-shadow-[0_0_20px_rgba(236,72,153,0.6)] italic">
+                {result.grade}
               </div>
-              <div className="mt-2 inline-block bg-purple-900/50 px-4 py-1 rounded-full border border-purple-500 text-purple-200 font-bold">
-                称号：{result.title}
+              <div className="text-xl font-black text-white mt-2">
+                {result.rank_name}
               </div>
+              <motion.div 
+                animate={{ scale: [1, 1.05, 1] }} 
+                transition={{ repeat: Infinity, duration: 2 }}
+                className="inline-block mt-4 bg-red-600/20 text-red-500 px-4 py-1 rounded-full border border-red-600/50 text-xs font-bold"
+              >
+                {result.warning}
+              </motion.div>
             </div>
 
-            {/* チャート表示（修正: オプショナルチェーンとデフォルト値を追加） */}
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              <div className="bg-gray-800 p-2 rounded">
-                <div className="text-gray-400">湿度</div>
-                <div className="text-lg font-bold text-blue-400">
-                  {result.chart?.humidity ?? 0}%
-                </div>
+            {/* スコア・チャート */}
+            <div className="grid grid-cols-4 gap-2">
+              <div className="bg-gray-900 p-2 rounded-xl border border-gray-800">
+                <div className="text-[10px] text-gray-500">SCORE</div>
+                <div className="text-lg font-bold">{result.score}</div>
               </div>
-              <div className="bg-gray-800 p-2 rounded">
-                <div className="text-gray-400">圧</div>
-                <div className="text-lg font-bold text-red-500">
-                  {result.chart?.pressure ?? 0}%
-                </div>
+              <div className="bg-gray-900 p-2 rounded-xl border border-gray-800">
+                <div className="text-[10px] text-gray-500">湿度</div>
+                <div className="text-lg font-bold text-blue-400">{result.chart.humidity}%</div>
               </div>
-              <div className="bg-gray-800 p-2 rounded">
-                <div className="text-gray-400">妄想</div>
-                <div className="text-lg font-bold text-purple-400">
-                  {result.chart?.delusion ?? 0}%
-                </div>
+              <div className="bg-gray-900 p-2 rounded-xl border border-gray-800">
+                <div className="text-[10px] text-gray-500">圧</div>
+                <div className="text-lg font-bold text-red-500">{result.chart.pressure}%</div>
+              </div>
+              <div className="bg-gray-900 p-2 rounded-xl border border-gray-800">
+                <div className="text-[10px] text-gray-500">妄想</div>
+                <div className="text-lg font-bold text-purple-400">{result.chart.delusion}%</div>
               </div>
             </div>
 
             {/* ハイライト */}
-            <div className="text-left bg-[#252525] p-4 rounded-xl border-l-4 border-pink-500">
-              <p className="text-[10px] text-gray-400 mb-1">HIGHLIGHT</p>
-              <p className="font-serif italic text-lg text-gray-200">"{result.highlight_quote}"</p>
+            <div className="text-left bg-white/5 p-4 rounded-2xl border-l-4 border-pink-500 quote">
+              <p className="font-serif italic text-gray-200">"{result.highlight_quote}"</p>
             </div>
 
             {/* 総評 */}
-            <p className="text-sm text-gray-300 leading-relaxed bg-black/30 p-4 rounded-lg">
+            <p className="text-sm text-gray-400 leading-relaxed text-left px-2">
               {result.comment}
             </p>
 
-            {/* --- 各回答への個別レビュー（修正: エラー回避処理を追加） --- */}
-            <div className="mt-6 text-left space-y-3 pt-6 border-t border-gray-800">
-              <h3 className="text-xs font-bold text-gray-500 uppercase">Review Log</h3>
-              
-              {/* Q1のレビュー */}
-              <div className="bg-gray-900/80 p-3 rounded-lg text-sm">
-                 <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <span>Q1: 既読無視</span>
-                 </div>
-                 <p className="text-gray-300 mb-2 border-l-2 border-gray-600 pl-2">"{answers.q1}"</p>
-                 <p className="text-pink-400 font-bold text-xs">師範代: {result.short_reviews?.[0] ?? "コメントなし"}</p>
-              </div>
-
-              {/* Q2のレビュー */}
-              <div className="bg-gray-900/80 p-3 rounded-lg text-sm">
-                 <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <span>Q2: 深夜のポエム</span>
-                 </div>
-                 <p className="text-gray-300 mb-2 border-l-2 border-gray-600 pl-2">"{answers.q2}"</p>
-                 <p className="text-pink-400 font-bold text-xs">師範代: {result.short_reviews?.[1] ?? "コメントなし"}</p>
-              </div>
-
-               {/* Q3のレビュー */}
-               <div className="bg-gray-900/80 p-3 rounded-lg text-sm">
-                 <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <span>Q3: 浮気牽制</span>
-                 </div>
-                 <p className="text-gray-300 mb-2 border-l-2 border-gray-600 pl-2">"{answers.q3}"</p>
-                 <p className="text-pink-400 font-bold text-xs">メンヘラ先生: {result.short_reviews?.[2] ?? "コメントなし"}</p>
-              </div>
+            {/* レビューログ */}
+            <div className="space-y-3 pt-6 border-t border-gray-800 text-left">
+              <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest text-center">Execution Log</p>
+              {result.short_reviews.map((rev, i) => (
+                <div key={i} className="bg-gray-900/40 p-3 rounded-xl text-xs border border-gray-800/50">
+                  <span className="text-gray-500 block mb-1">Q{i+1} Response</span>
+                  <p className="text-pink-400 font-bold">{rev}</p>
+                </div>
+              ))}
             </div>
 
             <button 
               onClick={() => { setStep(0); setAnswers({q1:"", q2:"", q3:""}); }}
-              className="text-sm text-gray-500 underline hover:text-white pb-8"
+              className="text-xs text-gray-600 underline hover:text-white transition-colors"
             >
-              もう一度診断する
+              再診断を受ける
             </button>
           </motion.div>
         )}
