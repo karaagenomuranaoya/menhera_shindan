@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 type DiagnosisResult = {
   score: number;
-  grade: string;
+  grade: "SSS" | "SS" | "S" | "A" | "B" | "C" | "D" | "E";
   rank_name: string;
   warning: string;
   chart: { humidity: number; pressure: number; delusion: number };
@@ -91,19 +92,40 @@ export default function Home() {
 
         {step === 5 && result && (
           <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="space-y-8 text-center">
-            {/* メイン格付け表示 */}
-            <div className="space-y-2">
-              <div className="text-[10px] text-purple-300 tracking-[0.2em] font-black">GRADE</div>
-              <div className="text-8xl font-black text-pink-400 drop-shadow-[0_4px_10px_rgba(244,114,182,0.3)] italic">
-                {result.grade}
+            {/* ランク画像 & グレード表示 */}
+            <div className="space-y-4 relative">
+              <div className="text-[10px] text-purple-300 tracking-[0.2em] font-black">DIAGNOSIS RESULT</div>
+              
+              <div className="text-6xl font-black text-pink-400 drop-shadow-[0_4px_10px_rgba(244,114,182,0.3)] italic mt-2">
+                Rank : {result.grade}
               </div>
-              <div className="text-xl font-black text-purple-800 mt-2">
+              {/* ランク画像 */}
+              {/* ランク画像 */}
+              <motion.div 
+                initial={{ rotate: -5, scale: 0.6 }}
+                animate={{ rotate: 0, scale: 1.1 }}
+                transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                className="relative w-72 h-72 mx-auto"
+              >
+                {/* 光る背景 */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-pink-300 to-purple-300 rounded-[2.5rem] blur-3xl opacity-40 animate-pulse"></div>
+
+                {/* ランク画像本体 */}
+                <img 
+                  src={`/${result.grade}.png`} 
+                  alt={result.grade}
+                  className="relative w-full h-full object-cover rounded-[2rem] border-4 border-white shadow-xl"
+                />
+              </motion.div>
+              <br />
+              
+              <div className="text-xl font-black text-purple-800">
                 {result.rank_name}
               </div>
               <motion.div 
                 animate={{ scale: [1, 1.03, 1] }} 
                 transition={{ repeat: Infinity, duration: 2.5 }}
-                className="inline-block mt-4 bg-pink-50 text-pink-400 px-5 py-1.5 rounded-full border border-pink-100 text-xs font-bold"
+                className="inline-block bg-pink-50 text-pink-400 px-5 py-1.5 rounded-full border border-pink-100 text-xs font-bold"
               >
                 {result.warning}
               </motion.div>
@@ -139,7 +161,7 @@ export default function Home() {
               {result.comment}
             </p>
 
-            {/* レビューログ：回答とAIコメントをセットで表示 */}
+            {/* レビューログ */}
             <div className="space-y-4 pt-6 border-t border-purple-100 text-left">
               <p className="text-[10px] font-black text-purple-200 uppercase tracking-widest text-center">Execution Log</p>
               {[1, 2, 3].map((num) => {
