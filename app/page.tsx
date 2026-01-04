@@ -107,9 +107,9 @@ export default function Home() {
             {/* ランク・メイン表示 */}
             <div className="space-y-4 relative">
               <div className="text-[10px] text-purple-300 tracking-[0.2em] font-black">RESULT</div>
-              <div className="text-6xl font-black text-pink-400 drop-shadow-[0_4px_10px_rgba(244,114,182,0.3)] italic mt-2">
-                Rank : {result.grade}
-              </div>
+              <div className="text-[clamp(2rem,12vw,3.75rem)] font-black text-pink-400 drop-shadow-[0_4px_10px_rgba(244,114,182,0.3)] italic mt-2 whitespace-nowrap leading-none">
+        Rank : {result.grade}
+      </div>
               <motion.div 
                 initial={{ rotate: -5, scale: 0.6 }}
                 animate={{ rotate: 0, scale: 1.1 }}
@@ -139,9 +139,9 @@ export default function Home() {
             <div className="space-y-6 text-left px-2 border-t border-purple-100 pt-6">
               {/* スコア表示をランクと同じスタイルで追加 */}
               <div className="text-center mb-4">
-                <div className="text-6xl font-black text-pink-400 drop-shadow-[0_4px_10px_rgba(244,114,182,0.3)] italic">
-                  Score : {result.score}
-                </div>
+                <div className="text-[clamp(1.8rem,10vw,3.75rem)] font-black text-pink-400 drop-shadow-[0_4px_10px_rgba(244,114,182,0.3)] italic whitespace-nowrap leading-none">
+          Score : {result.score}
+        </div>
               </div>
 
               <div className="space-y-1">
