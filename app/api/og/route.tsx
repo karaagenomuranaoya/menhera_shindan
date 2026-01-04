@@ -69,8 +69,8 @@ export async function GET(req: NextRequest) {
                 {rankName}
               </div>
               <div style={{ fontSize: '50px', fontWeight: '900', color: '#f472b6', fontStyle: 'italic' }}>
-                Score: {score}
-              </div>
+                {`Score: ${score}`}
+                </div>
             </div>
 
             {/* 右側：回答とコメント */}
