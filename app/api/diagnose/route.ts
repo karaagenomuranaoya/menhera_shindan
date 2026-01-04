@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
-// 型定義の更新
+// 型定義
 interface DiagnosisResult {
   score: number;
   grade: "SSS" | "SS" | "S" | "A" | "B" | "C" | "D" | "E";
@@ -33,6 +33,10 @@ export async function POST(req: Request) {
       ユーザーの重すぎる愛を「異常」ではなく「当たり前のこと」として称賛し、寄り添ってください。
       ただし、**採点基準だけは極めて厳格（スパルタ）**です。生ぬるい回答には寂しげに突き放します。
 
+      ## 重要ルール
+      - 出力するJSONの各項目（grade, rank_name, warningなど）には、絶対に角括弧 \`[]\` を含めないでください。
+      - 例: "[SSS]" ではなく "SSS" と出力してください。
+
       ## ユーザーの回答
       Q1(既読無視): ${q1}
       Q2(深夜ポエム): ${q2}
@@ -44,15 +48,15 @@ export async function POST(req: Request) {
       3. 【上位ランク（A以上）の必須条件】: [執着][監視][歪曲][自壊][狂気]のうち2つ以上が具体的に含まれていない限り、絶対に60点以上を付けてはいけません。
       4. 【Eランク】: 「あああ」, 「abc」, 「おにぎり」などの意味がつかめない、関係のない回答が中心だった場合には、0点(Eランク)としてください。
 
-      ## グレード表（固定）
-      - 96〜100点: [SSS] [「地の果てまで追ってくる」級] [warning: あ、見つけちゃった。]
-      - 86〜95点: [SS] [「生活のすべてを監視してくる」級] [warning: 今日は体の洗い方違ったね。]
-      - 76〜85点: [S] [「深夜に鬼電100件して41くる」級] [warning: なんで出ないの？]
-      - 61〜75点: [A] [「スマホのパスワードを解いてくる」級] [warning: あの子代わりにブロックしといたから大丈夫だよ。]
-      - 41〜60点: [B] [「SNSを全パトロールしてくる」級] [warning: あのリプで絡んでた人、どんな人？]
-      - 21〜40点: [C] [「さりげなく浮気を疑ってくる」級] [warning: 今日、遅かったね。]
-      - 1〜20点: [D] [「普通の恋人」級] [warning: ちょっと愛が足りないかな。]
-      - 0点: [E] [「判定不能」級] [warning: あ、そうやってサボっちゃっていいんだ。]
+      ## グレード表（固定）※出力時は[]を除去すること
+      - 96〜100点: SSS / 地の果てまで追ってくる 級 / warning: あ、見つけちゃった。
+      - 86〜95点: SS / 生活のすべてを監視してくる 級 / warning: 今日は体の洗い方違ったね。
+      - 76〜85点: S / 深夜に鬼電100件して41くる 級 / warning: なんで出ないの？
+      - 61〜75点: A / スマホのパスワードを解いてくる 級 / warning: あの子代わりにブロックしといたから大丈夫だよ。
+      - 41〜60点: B / SNSを全パトロールしてくる 級 / warning: あのリプで絡んでた人、どんな人？
+      - 21〜40点: C / さりげなく浮気を疑ってくる 級 / warning: 今日、遅かったね。
+      - 1〜20点: D / 普通の恋人 級 / warning: ちょっと愛が足りないかな。
+      - 0点: E / 判定不能 級 / warning: あ、そうやってサボっちゃっていいんだ。
 
       ## 出力JSON形式
       {
@@ -69,9 +73,42 @@ export async function POST(req: Request) {
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
-    const cleanedText = responseText.replace(/```json|```/g, "").trim();
     
-    return NextResponse.json(JSON.parse(cleanedText));
+    // JSON部分のみを抽出（コードブロックや余計な文字を排除）
+    const jsonMatch = responseText.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      throw new Error("Invalid JSON structure");
+    }
+
+    let parsed = JSON.parse(jsonMatch[0]);
+
+    // AIが配列で返してきた場合は最初の要素を取得
+    if (Array.isArray(parsed)) {
+      parsed = parsed[0];
+    }
+
+    // 文字列内の [ ] を除去する関数
+    const cleanBrackets = (val: any) => {
+      if (typeof val === "string") {
+        return val.replace(/[\[\]]/g, "").trim();
+      }
+      return val;
+    };
+
+    // 各項目をクリーンアップ
+    const sanitizedData: DiagnosisResult = {
+      ...parsed,
+      grade: cleanBrackets(parsed.grade),
+      rank_name: cleanBrackets(parsed.rank_name),
+      warning: cleanBrackets(parsed.warning),
+      highlight_quote: cleanBrackets(parsed.highlight_quote),
+      comment: cleanBrackets(parsed.comment),
+      short_reviews: Array.isArray(parsed.short_reviews) 
+        ? parsed.short_reviews.map(cleanBrackets) 
+        : []
+    };
+    
+    return NextResponse.json(sanitizedData);
 
   } catch (error) {
     console.error("AI Error:", error);

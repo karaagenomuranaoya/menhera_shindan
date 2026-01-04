@@ -44,12 +44,12 @@ export default function Home() {
       <div className="w-full max-w-md bg-white/70 p-6 rounded-[2.5rem] border border-purple-100 shadow-2xl shadow-purple-200/50 backdrop-blur-xl">
         
         <h1 className="text-2xl font-black text-center mb-8 tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-purple-500 to-pink-400">
-          メンヘラ診断<br/><span className="text-xs font-bold text-purple-300 tracking-normal">Menhera Diagnosis</span>
+          AIメンヘラ診断<br/><span className="text-xs font-bold text-purple-300 tracking-normal">Menhera Check</span>
         </h1>
 
         {step === 0 && (
           <div className="text-center space-y-6">
-            <p className="text-purple-400/80 text-sm leading-relaxed font-medium">あなたの愛の重さを、<br/>メンヘラ界のカリスマが格付けします。</p>
+            <p className="text-purple-400/80 text-sm leading-relaxed font-medium">あなたの愛の重さを、<br/>メンヘラのお友達AIが診断します。</p>
             <button 
               onClick={() => setStep(1)} 
               className="w-full py-4 bg-gradient-to-r from-purple-400 to-pink-300 text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-purple-200"
@@ -78,7 +78,7 @@ export default function Home() {
               className="w-full py-4 bg-purple-500 text-white rounded-2xl font-black disabled:opacity-30 disabled:grayscale transition-all shadow-md shadow-purple-100"
               disabled={!answers[`q${step}` as keyof typeof answers]}
             >
-              {step < 3 ? "次へ進む" : "格付けを仰ぐ"}
+              {step < 3 ? "次へ進む" : "診断する"}
             </button>
           </motion.div>
         )}
@@ -86,7 +86,7 @@ export default function Home() {
         {step === 4 && (
           <div className="text-center py-20">
             <div className="animate-spin inline-block w-8 h-8 border-[3px] border-purple-300 border-t-purple-500 rounded-full mb-4"></div>
-            <p className="text-purple-400 font-bold animate-pulse">精神を解析中...</p>
+            <p className="text-purple-400 font-bold animate-pulse">お友達になれるかな...</p>
           </div>
         )}
 
@@ -99,7 +99,6 @@ export default function Home() {
               <div className="text-6xl font-black text-pink-400 drop-shadow-[0_4px_10px_rgba(244,114,182,0.3)] italic mt-2">
                 Rank : {result.grade}
               </div>
-              {/* ランク画像 */}
               {/* ランク画像 */}
               <motion.div 
                 initial={{ rotate: -5, scale: 0.6 }}
@@ -175,7 +174,7 @@ export default function Home() {
                       </p>
                     </div>
                     <div>
-                      <span className="text-pink-300 font-bold block mb-0.5">AI Review</span>
+                      <span className="text-pink-300 font-bold block mb-0.5">Review</span>
                       <p className="text-pink-400 font-bold italic">{result.short_reviews[num - 1]}</p>
                     </div>
                   </div>
