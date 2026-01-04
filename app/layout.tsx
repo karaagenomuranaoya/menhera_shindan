@@ -16,6 +16,9 @@ export const metadata: Metadata = {
   title: "AI メンヘラ診断",
   description: "あなたの愛の重さをメンヘラのお友達AIが診断します。",
   viewport: "width=device-width, initial-scale=1",
+  icons: {
+    icon: "/favicon.png", // public/favicon.png を参照
+  },
 };
 
 export default function RootLayout({
@@ -26,7 +29,6 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
-        <link rel="icon" href="/favicon.ico" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
