@@ -139,15 +139,26 @@ export default function Home() {
               {result.comment}
             </p>
 
-            {/* レビューログ */}
-            <div className="space-y-3 pt-6 border-t border-purple-100 text-left">
+            {/* レビューログ：回答とAIコメントをセットで表示 */}
+            <div className="space-y-4 pt-6 border-t border-purple-100 text-left">
               <p className="text-[10px] font-black text-purple-200 uppercase tracking-widest text-center">Execution Log</p>
-              {result.short_reviews.map((rev, i) => (
-                <div key={i} className="bg-white/40 p-3 rounded-2xl text-[11px] border border-purple-50">
-                  <span className="text-purple-300 font-bold block mb-0.5">Q{i+1} Response</span>
-                  <p className="text-pink-400 font-bold">{rev}</p>
-                </div>
-              ))}
+              {[1, 2, 3].map((num) => {
+                const answerKey = `q${num}` as keyof typeof answers;
+                return (
+                  <div key={num} className="bg-white/40 p-3 rounded-2xl text-[11px] border border-purple-50 space-y-2">
+                    <div>
+                      <span className="text-purple-300 font-bold block mb-1">Your Answer {num}</span>
+                      <p className="text-purple-800 whitespace-pre-wrap bg-purple-50/30 p-2 rounded-lg border border-purple-100/50">
+                        {answers[answerKey]}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-pink-300 font-bold block mb-0.5">AI Review</span>
+                      <p className="text-pink-400 font-bold italic">{result.short_reviews[num - 1]}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <button 
