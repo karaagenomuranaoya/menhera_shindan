@@ -162,7 +162,7 @@ export default function Home() {
                     <span>Q3: 浮気牽制</span>
                  </div>
                  <p className="text-gray-300 mb-2 border-l-2 border-gray-600 pl-2">"{answers.q3}"</p>
-                 <p className="text-pink-400 font-bold text-xs">師範代: {result.short_reviews?.[2] ?? "コメントなし"}</p>
+                 <p className="text-pink-400 font-bold text-xs">メンヘラ先生: {result.short_reviews?.[2] ?? "コメントなし"}</p>
               </div>
             </div>
 
