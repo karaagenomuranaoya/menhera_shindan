@@ -65,6 +65,19 @@ export default function DiagnosisClient() {
     const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
     window.open(xUrl, "_blank");
   };
+  const shareOnLine = () => {
+  if (!result) return;
+  
+  // 共有するテキスト
+  const text = `AIメンヘラ診断：結果は【${result.grade}ランク】でした`;
+  // 共有するURL（OGPが設定されている個別ページURL）
+  const shareUrl = `${window.location.origin}/result/${result.id}`; 
+
+  // LINEのシェア用URL生成
+  const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
+  
+  window.open(lineUrl, "_blank");
+};
 
   return (
     <main className="min-h-screen bg-[#f8f5ff] text-purple-900 flex flex-col items-center justify-center p-4 font-sans selection:bg-purple-200">
@@ -158,6 +171,14 @@ export default function DiagnosisClient() {
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                 </svg>
                 Xで結果を共有する
+              </button>
+              {/* LINE共有ボタン (新規追加) */}
+              <button
+                onClick={shareOnLine}
+                className="w-full py-4 bg-[#06C755] text-white rounded-2xl font-black hover:opacity-90 transition-all shadow-lg flex items-center justify-center gap-2"
+  >
+                <span className="text-lg">LINE</span>
+                結果を友達に送る
               </button>
             </div>
 
