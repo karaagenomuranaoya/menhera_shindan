@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Trash2 } from "lucide-react"; // ゴミ箱アイコン追加
+import { Trash2, Link as LinkIcon, Check } from "lucide-react"; // アイコン追加
 import OgImagePreview from "./components/OgImagePreview";
 
 // 質問の候補リスト
@@ -23,13 +23,14 @@ type DiagnosisResult = {
   comment: string;
 };
 
-const STORAGE_KEY = "menhera_diagnosis_draft"; // 保存用キー
+const STORAGE_KEY = "menhera_diagnosis_draft"; 
 
 export default function DiagnosisClient() {
   const [step, setStep] = useState(0);
   const [selectedQuestion, setSelectedQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState<DiagnosisResult | null>(null);
+  const [copied, setCopied] = useState(false); // コピー完了状態
 
   // 初回ロード時にローカルストレージから復元
   useEffect(() => {
@@ -73,9 +74,6 @@ export default function DiagnosisClient() {
       const data = await res.json();
       setResult(data);
       setStep(3);
-      // 診断成功時はストレージをクリアする？
-      // いや、エラーや「戻る」を考慮して残しておき、
-      // 「再診断」ボタンを押した時に消す仕様にします。
     } catch (e) {
       alert("診断エラー！もう一度試してみてね。");
       setStep(1);
@@ -98,6 +96,16 @@ export default function DiagnosisClient() {
     window.open(lineUrl, "_blank");
   };
 
+  // リンクコピー機能
+  const copyLink = () => {
+    if (!result) return;
+    const shareUrl = `${window.location.origin}/result/${result.id}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
   // 再診断（リセット）処理
   const handleRestart = () => {
     setStep(0);
@@ -117,7 +125,7 @@ export default function DiagnosisClient() {
         {step === 0 && (
           <div className="text-center space-y-6">
             
-             {/* ▼▼▼ 追加: バナー画像 ▼▼▼ */}
+            {/* バナー画像 */}
             <div className="w-full overflow-hidden rounded-2xl shadow-md border-2 border-white/50">
               <img 
                 src="/banner.png" 
@@ -125,8 +133,7 @@ export default function DiagnosisClient() {
                 className="w-full h-auto object-cover"
               />
             </div>
-            {/* ▲▲▲ 追加ここまで ▲▲▲ */}
-            
+
             <p className="text-purple-400/80 text-sm leading-relaxed font-medium">あなたの愛の重さを<br/>メンヘラのお友達AIが診断します。</p>
             <button 
               onClick={() => setStep(1)} 
@@ -252,11 +259,14 @@ export default function DiagnosisClient() {
             {/* 画面下部エリア：カードプレビュー＆共有ボタン */}
             <div className="border-t border-purple-100 pt-6 space-y-6">
               
-              {/* カード保存プレビュー */}
               <OgImagePreview id={result.id} />
 
-              {/* URL共有ボタン群 */}
               <div className="space-y-3">
+                {/* 補足メッセージ */}
+                <p className="text-[10px] text-purple-400/80 mb-2 font-medium">
+                  ※作成画面で画像が出なくても、投稿すれば表示されます
+                </p>
+
                 <button
                   onClick={shareOnX}
                   className="w-full py-4 bg-[#0f1419] text-white rounded-2xl font-black hover:opacity-90 transition-all shadow-lg flex items-center justify-center gap-2"
@@ -266,13 +276,25 @@ export default function DiagnosisClient() {
                   </svg>
                   Xで結果を共有する
                 </button>
-                <button
-                  onClick={shareOnLine}
-                  className="w-full py-4 bg-[#06C755] text-white rounded-2xl font-black hover:opacity-90 transition-all shadow-lg flex items-center justify-center gap-2"
-                >
-                  <span className="text-lg">LINE</span>
-                  結果を友達に送る
-                </button>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={shareOnLine}
+                    className="flex-[2] py-4 bg-[#06C755] text-white rounded-2xl font-black hover:opacity-90 transition-all shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <span className="text-lg">LINE</span>
+                    友達に教える
+                  </button>
+                  
+                  {/* リンクコピーボタン */}
+                  <button
+                    onClick={copyLink}
+                    className="flex-1 py-4 bg-white border-2 border-purple-100 text-purple-400 rounded-2xl font-bold hover:bg-purple-50 transition-all shadow-sm flex items-center justify-center gap-1 active:scale-95"
+                  >
+                    {copied ? <Check size={20} /> : <LinkIcon size={20} />}
+                    <span className="text-xs">{copied ? "Copied" : "Copy"}</span>
+                  </button>
+                </div>
               </div>
             </div>
 
