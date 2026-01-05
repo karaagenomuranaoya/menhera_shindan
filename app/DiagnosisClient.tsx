@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import OgImagePreview from "./components/OgImagePreview"; // 追加
+import { Trash2 } from "lucide-react"; // ゴミ箱アイコン追加
+import OgImagePreview from "./components/OgImagePreview";
 
 // 質問の候補リスト
 const QUESTION_CANDIDATES = [
@@ -22,11 +23,26 @@ type DiagnosisResult = {
   comment: string;
 };
 
+const STORAGE_KEY = "menhera_diagnosis_draft"; // 保存用キー
+
 export default function DiagnosisClient() {
   const [step, setStep] = useState(0);
   const [selectedQuestion, setSelectedQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState<DiagnosisResult | null>(null);
+
+  // 初回ロード時にローカルストレージから復元
+  useEffect(() => {
+    const savedAnswer = localStorage.getItem(STORAGE_KEY);
+    if (savedAnswer) {
+      setAnswer(savedAnswer);
+    }
+  }, []);
+
+  // 回答が変更されるたびにローカルストレージに保存
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, answer);
+  }, [answer]);
 
   useEffect(() => {
     if (step === 0) {
@@ -34,6 +50,14 @@ export default function DiagnosisClient() {
       setSelectedQuestion(QUESTION_CANDIDATES[randomIdx]);
     }
   }, [step]);
+
+  // 全消去機能
+  const clearAnswer = () => {
+    if (confirm("入力内容をすべて消去しますか？")) {
+      setAnswer("");
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  };
 
   const analyze = async () => {
     setStep(2);
@@ -49,8 +73,11 @@ export default function DiagnosisClient() {
       const data = await res.json();
       setResult(data);
       setStep(3);
+      // 診断成功時はストレージをクリアする？
+      // いや、エラーや「戻る」を考慮して残しておき、
+      // 「再診断」ボタンを押した時に消す仕様にします。
     } catch (e) {
-      alert("診断エラー！");
+      alert("診断エラー！もう一度試してみてね。");
       setStep(1);
     }
   };
@@ -69,6 +96,14 @@ export default function DiagnosisClient() {
     const shareUrl = `${window.location.origin}/result/${result.id}`;
     const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
     window.open(lineUrl, "_blank");
+  };
+
+  // 再診断（リセット）処理
+  const handleRestart = () => {
+    setStep(0);
+    setAnswer("");
+    localStorage.removeItem(STORAGE_KEY);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -97,12 +132,33 @@ export default function DiagnosisClient() {
             <div className="bg-purple-50/80 p-5 rounded-3xl rounded-tl-none text-sm border border-purple-100 text-purple-800 shadow-inner">
               {selectedQuestion}
             </div>
-            <textarea
-              className="w-full bg-white/50 border border-purple-100 rounded-2xl p-4 text-purple-900 focus:outline-none focus:border-purple-300 min-h-[120px] transition-colors placeholder-purple-200 text-sm shadow-sm"
-              placeholder="メッセージを入力..."
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-            />
+            
+            <div className="relative">
+              <textarea
+                className="w-full bg-white/50 border border-purple-100 rounded-2xl p-4 text-purple-900 focus:outline-none focus:border-purple-300 min-h-[120px] transition-colors placeholder-purple-200 text-sm shadow-sm pr-10"
+                placeholder="メッセージを入力..."
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+              />
+              
+              {/* 全消去ボタン */}
+              {answer && (
+                <button
+                  onClick={clearAnswer}
+                  className="absolute top-3 right-3 text-purple-200 hover:text-pink-400 transition-colors p-1"
+                  title="全消去"
+                >
+                  <Trash2 size={18} />
+                </button>
+              )}
+            </div>
+
+            <div className="flex justify-end">
+              <span className="text-[10px] text-purple-300 font-bold">
+                {answer.length} 文字の愛
+              </span>
+            </div>
+
             <button
               onClick={() => analyze()}
               className="w-full py-4 bg-purple-500 text-white rounded-2xl font-black disabled:opacity-30 disabled:grayscale transition-all shadow-md shadow-purple-100"
@@ -123,7 +179,6 @@ export default function DiagnosisClient() {
         {step === 3 && result && (
           <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="space-y-8 text-center">
             
-            {/* ▼ ここから元のデザイン復活 ▼ */}
             {/* ランク・メイン表示 */}
             <div className="space-y-4 relative">
               <div className="text-[10px] text-purple-300 tracking-[0.2em] font-black">RESULT</div>
@@ -154,10 +209,8 @@ export default function DiagnosisClient() {
                 {result.warning}
               </motion.div>
             </div>
-            {/* ▲ ここまで元のデザイン復活 ▲ */}
 
-
-            {/* 質問・回答・総評セクション (共有ボタンの前に移動) */}
+            {/* 質問・回答・総評セクション */}
             <div className="space-y-6 text-left px-2 border-t border-purple-100 pt-6">
               <div className="text-center mb-4">
                 <div className="text-[clamp(1.8rem,10vw,3.75rem)] font-black text-pink-400 drop-shadow-[0_4px_10px_rgba(244,114,182,0.3)] italic whitespace-nowrap leading-none">
@@ -185,8 +238,7 @@ export default function DiagnosisClient() {
               </div>
             </div>
 
-
-            {/* ▼ 画面下部エリア：カードプレビュー＆共有ボタン ▼ */}
+            {/* 画面下部エリア：カードプレビュー＆共有ボタン */}
             <div className="border-t border-purple-100 pt-6 space-y-6">
               
               {/* カード保存プレビュー */}
@@ -214,7 +266,7 @@ export default function DiagnosisClient() {
             </div>
 
             <button 
-              onClick={() => { setStep(0); setAnswer(""); }}
+              onClick={handleRestart}
               className="text-xs text-purple-300 font-bold underline decoration-purple-100 underline-offset-4 hover:text-purple-400 transition-colors pt-8 pb-4"
             >
               再診断を受ける
