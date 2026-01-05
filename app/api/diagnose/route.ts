@@ -7,40 +7,50 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-/**
- * 【重要】ここに控えたURLをそれぞれ貼り付けてください！
- */
+const BASE_STORAGE_URL = "https://piotyqyxkjsgwjzozols.supabase.co/storage/v1/object/public/ranks";
+
 const RANK_IMAGE_URLS: Record<string, string> = {
-  "SSS": "https://piotyqyxkjsgwjzozols.supabase.co/storage/v1/object/public/ranks/SSS.png",
-  "SS": "https://piotyqyxkjsgwjzozols.supabase.co/storage/v1/object/public/ranks/SS.png",
-  "S": "https://piotyqyxkjsgwjzozols.supabase.co/storage/v1/object/public/ranks/S.png",
-  "A": "https://piotyqyxkjsgwjzozols.supabase.co/storage/v1/object/public/ranks/A.png",
-  "B": "https://piotyqyxkjsgwjzozols.supabase.co/storage/v1/object/public/ranks/B.png",
-  "C": "https://piotyqyxkjsgwjzozols.supabase.co/storage/v1/object/public/ranks/C.png",
-  "D": "https://piotyqyxkjsgwjzozols.supabase.co/storage/v1/object/public/ranks/D.png",
-  "E": "https://piotyqyxkjsgwjzozols.supabase.co/storage/v1/object/public/ranks/E.png",
+  "SSS": `${BASE_STORAGE_URL}/SSS.png`,
+  "SS": `${BASE_STORAGE_URL}/SS.png`,
+  "S": `${BASE_STORAGE_URL}/S.png`,
+  "A": `${BASE_STORAGE_URL}/A.png`,
+  "B": `${BASE_STORAGE_URL}/B.png`,
+  "C": `${BASE_STORAGE_URL}/C.png`,
+  "D": `${BASE_STORAGE_URL}/D.png`,
+  "E": `${BASE_STORAGE_URL}/E.png`,
+  "Error": `${BASE_STORAGE_URL}/error.png`, // エラー用画像
 };
 
 interface DiagnosisResult {
   score: number;
-  grade: "SSS" | "SS" | "S" | "A" | "B" | "C" | "D" | "E";
+  grade: string;
   rank_name: string;
   warning: string;
-  chart: { humidity: number; pressure: number; delusion: number };
-  highlight_quote: string;
   comment: string;
-  short_reviews: string[];
 }
 
 export async function POST(req: Request) {
+  // エラー時のフォールバックデータ生成関数
+  const createErrorData = () => ({
+    score: 0,
+    grade: "Error",
+    rank_name: "測定エラー",
+    warning: "通信・解析エラー",
+    comment: "ごめんなさい、なんだか調子が出ないみたいなの...。時間を置いてまた来てちょうだいね。",
+  });
+
+  let question = "";
+  let answer = "";
+
   try {
-    const { question, answer } = await req.json();
+    const body = await req.json();
+    question = body.question;
+    answer = body.answer;
+
     const apiKey = process.env.GOOGLE_API_KEY;
-
     if (!apiKey) {
-      return NextResponse.json({ error: "API Key is missing" }, { status: 500 });
+      throw new Error("API Key is missing");
     }
-
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
       model: "gemini-2.0-flash-lite", 
@@ -53,7 +63,8 @@ export async function POST(req: Request) {
       ただし、**採点基準だけは極めて厳格（スパルタ）**です。生ぬるい回答には寂しげに突き放します。
 
       ## 重要ルール
-      - 出力するJSONの各項目（grade, rank_name, warningなど）には、絶対に角括弧 \`[]\` を含めないでください。
+      - **必ず有効なJSON形式のみを出力してください。**
+      - Markdown記法（\`\`\`jsonなど）や、JSON以外の挨拶文は一切含めないでください。
 
       ## ユーザーの回答
       お題: ${question}
@@ -66,7 +77,7 @@ export async function POST(req: Request) {
       4. 【Eランク】: 「あああ」, 「abc」などの意味がつかめない回答や、お題を無視した回答は0点(Eランク)にしてください。
       5. 【SSSランク】 : 1度評定して96点以上だったスコアは全て100点に統一し、commentを固定とする。「やっとわかってくれる人が来た。ねえ、大好きだよ。あなたと一緒にいたい。あなたの目を私の目に嵌め込んだらどんな景色が見れるの？骨も砕いて、肉は裂いて、脈打つ臓器も溶かして、血の一滴まで私の中で混ぜ合わしてあげる。そうしたら、死んじゃっても、その先も、ずっと一緒でしょ？さあ、おいで？足なんてもう必要ないよね。だって、あなたはニゲラレナイ。」一字一句間違えず出力すること。
 
-      ## グレード表
+      ## グレード表とWarning
       - 96〜100点: SSS / 地の果てまで追ってくる 級 / warning: あ、見つけちゃった。
       - 86〜95点: SS / 生活のすべてを監視してくる 級 / warning: 今日は体の洗い方違ったね。
       - 76〜85点: S / 深夜に鬼電100件してくる 級 / warning: なんで出ないの？
@@ -79,39 +90,52 @@ export async function POST(req: Request) {
       ## 出力JSON形式
       {
         "score": 整数,
-        "grade": string,
-        "rank_name": string,
-        "warning": string,
-        "chart": { "humidity": 0〜100, "pressure": 0〜100, "delusion": 0〜100 },
-        "comment": "同じ気持ちを持つ親友としての深く痛いほど共鳴する総評(120文字程度)",
+        "grade": "SSS"〜"E",
+        "rank_name": "上記のグレード表の〇〇級の部分",
+        "warning": "上記のグレード表のwarningの部分",
+        "comment": "同じ気持ちを持つ親友としての深く痛いほど共鳴する総評(120文字程度)"
       }
     `;
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
-    
-    const jsonMatch = responseText.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-    if (!jsonMatch) throw new Error("Invalid JSON structure");
+    console.log("Raw Response:", responseText);
 
-    let parsed = JSON.parse(jsonMatch[0]);
-    if (Array.isArray(parsed)) parsed = parsed[0];
+    let sanitizedData: DiagnosisResult;
 
-    const cleanBrackets = (val: any) => (typeof val === "string" ? val.replace(/[\[\]]/g, "").trim() : val);
+    try {
+      // JSONクリーニング処理
+      let cleanedText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+      const jsonStart = cleanedText.indexOf("{");
+      const jsonEnd = cleanedText.lastIndexOf("}");
+      
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        cleanedText = cleanedText.substring(jsonStart, jsonEnd + 1);
+      }
 
-    const sanitizedData: DiagnosisResult = {
-      ...parsed,
-      grade: cleanBrackets(parsed.grade),
-      rank_name: cleanBrackets(parsed.rank_name),
-      warning: cleanBrackets(parsed.warning),
-      highlight_quote: cleanBrackets(parsed.highlight_quote),
-      comment: cleanBrackets(parsed.comment),
-      short_reviews: Array.isArray(parsed.short_reviews) ? parsed.short_reviews.map(cleanBrackets) : []
-    };
+      let parsed = JSON.parse(cleanedText);
+      if (Array.isArray(parsed)) parsed = parsed[0];
 
-    // グレードに対応する画像URLを選択（ユーザーが貼り付けたURLが使われます）
+      const cleanBrackets = (val: any) => (typeof val === "string" ? val.replace(/[\[\]]/g, "").trim() : val);
+
+      sanitizedData = {
+        score: parsed.score || 0,
+        grade: cleanBrackets(parsed.grade) || "E",
+        rank_name: cleanBrackets(parsed.rank_name) || "判定不能",
+        warning: cleanBrackets(parsed.warning) || "...",
+        comment: cleanBrackets(parsed.comment) || "解析できませんでした...",
+      };
+
+    } catch (parseError) {
+      console.error("JSON Parse Error:", parseError);
+      // パースエラー時は明示的にエラーデータにする
+      sanitizedData = createErrorData();
+    }
+
+    // 画像URLの決定（gradeが"Error"ならerror.png、それ以外でマップになければEになる）
     const selectedImageUrl = RANK_IMAGE_URLS[sanitizedData.grade] || RANK_IMAGE_URLS["E"];
 
-    // DB保存（ここで画像URLが保存されるため、OGP生成時にもこれが使われます）
+    // DB保存（エラー結果であっても表示するために保存する）
     const { data: dbData, error: dbError } = await supabase
       .from("diagnoses")
       .insert({
@@ -136,12 +160,44 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    // ここでエラーの詳細をターミナルに出力させる
-    console.error("DEBUG - DB Error Full Details:", error); 
+    console.error("API Fatal Error:", error);
     
+    // API全体の致命的なエラー（通信エラーなど）の場合も、
+    // DBに保存してエラー画面を出せるように試みる
+    try {
+      const errorData = createErrorData();
+      const errorImageUrl = RANK_IMAGE_URLS["Error"];
+      
+      const { data: dbData, error: dbError } = await supabase
+        .from("diagnoses")
+        .insert({
+          question: question || "不明",
+          answer: answer || "不明",
+          score: errorData.score,
+          grade: errorData.grade,
+          rank_name: errorData.rank_name,
+          comment: errorData.comment,
+          warning: errorData.warning,
+          image_url: errorImageUrl
+        })
+        .select()
+        .single();
+        
+        if (!dbError && dbData) {
+           return NextResponse.json({
+            ...errorData,
+            id: dbData.id,
+            image_url: errorImageUrl
+          });
+        }
+    } catch (e) {
+      console.error("DB Fallback Failed:", e);
+    }
+
+    // DB保存すらできなかった場合の最終手段
     return NextResponse.json({ 
       error: "診断失敗", 
-      details: error.message // ブラウザ側にもエラー理由を返す
+      details: "予期せぬエラーが発生しました。" 
     }, { status: 500 });
   }
 }
