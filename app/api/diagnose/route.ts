@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     grade: "Error",
     rank_name: "測定エラー",
     warning: "通信・解析エラー",
-    comment: "ごめんなさい、なんだか調子が出ないみたいなの...。時間を置いてまた来てちょうだいね。",
+    comment: "ごめんなさい、なんだか調子が出ないみたいなの。入力欄は保存されてるから、また来てちょうだいね。",
   });
 
   let question = "";
