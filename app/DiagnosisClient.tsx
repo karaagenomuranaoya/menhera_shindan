@@ -57,7 +57,7 @@ export default function DiagnosisClient() {
   const shareOnX = () => {
     if (!result) return;
     
-    const text = `AIメンヘラ診断：結果は【${result.grade}ランク】でした！\n#AIメンヘラ診断\n`;
+    const text = `AIメンヘラ診断：結果は【${result.grade}ランク】でした\n#AIメンヘラ診断\n`;
     
     // DBに保存された個別ページのURLを共有
     const shareUrl = `${window.location.origin}/?id=${result.id}`;
