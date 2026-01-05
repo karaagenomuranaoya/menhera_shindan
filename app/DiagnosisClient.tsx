@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import OgImagePreview from "./components/OgImagePreview"; // 追加
 
 // 質問の候補リスト
 const QUESTION_CANDIDATES = [
@@ -12,12 +13,12 @@ const QUESTION_CANDIDATES = [
 ];
 
 type DiagnosisResult = {
-  id: string; // DBのIDを追加
+  id: string;
   score: number;
   grade: "SSS" | "SS" | "S" | "A" | "B" | "C" | "D" | "E";
   rank_name: string;
   warning: string;
-  image_url: string; // 追加
+  image_url: string;
   comment: string;
 };
 
@@ -56,28 +57,19 @@ export default function DiagnosisClient() {
 
   const shareOnX = () => {
     if (!result) return;
-    
     const text = `AIメンヘラ診断：結果は【${result.grade}ランク】でした\n#AIメンヘラ診断\n`;
-    
-    // DBに保存された個別ページのURLを共有
     const shareUrl = `${window.location.origin}/result/${result.id}`;
-
     const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
     window.open(xUrl, "_blank");
   };
-  const shareOnLine = () => {
-  if (!result) return;
-  
-  // 共有するテキスト
-  const text = `AIメンヘラ診断：結果は【${result.grade}ランク】でした`;
-  // 共有するURL（OGPが設定されている個別ページURL）
-  const shareUrl = `${window.location.origin}/result/${result.id}`; 
 
-  // LINEのシェア用URL生成
-  const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
-  
-  window.open(lineUrl, "_blank");
-};
+  const shareOnLine = () => {
+    if (!result) return;
+    const text = `AIメンヘラ診断：結果は【${result.grade}ランク】でした`;
+    const shareUrl = `${window.location.origin}/result/${result.id}`;
+    const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
+    window.open(lineUrl, "_blank");
+  };
 
   return (
     <main className="min-h-screen bg-[#f8f5ff] text-purple-900 flex flex-col items-center justify-center p-4 font-sans selection:bg-purple-200">
@@ -130,6 +122,8 @@ export default function DiagnosisClient() {
 
         {step === 3 && result && (
           <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="space-y-8 text-center">
+            
+            {/* ▼ ここから元のデザイン復活 ▼ */}
             {/* ランク・メイン表示 */}
             <div className="space-y-4 relative">
               <div className="text-[10px] text-purple-300 tracking-[0.2em] font-black">RESULT</div>
@@ -160,29 +154,10 @@ export default function DiagnosisClient() {
                 {result.warning}
               </motion.div>
             </div>
+            {/* ▲ ここまで元のデザイン復活 ▲ */}
 
-            {/* 共有ボタン */}
-            <div className="pt-4">
-              <button
-                onClick={shareOnX}
-                className="w-full py-4 bg-[#0f1419] text-white rounded-2xl font-black hover:opacity-90 transition-all shadow-lg flex items-center justify-center gap-2"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                </svg>
-                Xで結果を共有する
-              </button>
-              {/* LINE共有ボタン (新規追加) */}
-              <button
-                onClick={shareOnLine}
-                className="w-full py-4 bg-[#06C755] text-white rounded-2xl font-black hover:opacity-90 transition-all shadow-lg flex items-center justify-center gap-2"
-  >
-                <span className="text-lg">LINE</span>
-                結果を友達に送る
-              </button>
-            </div>
 
-            {/* 質問・回答・総評セクション */}
+            {/* 質問・回答・総評セクション (共有ボタンの前に移動) */}
             <div className="space-y-6 text-left px-2 border-t border-purple-100 pt-6">
               <div className="text-center mb-4">
                 <div className="text-[clamp(1.8rem,10vw,3.75rem)] font-black text-pink-400 drop-shadow-[0_4px_10px_rgba(244,114,182,0.3)] italic whitespace-nowrap leading-none">
@@ -210,9 +185,37 @@ export default function DiagnosisClient() {
               </div>
             </div>
 
+
+            {/* ▼ 画面下部エリア：カードプレビュー＆共有ボタン ▼ */}
+            <div className="border-t border-purple-100 pt-6 space-y-6">
+              
+              {/* カード保存プレビュー */}
+              <OgImagePreview id={result.id} />
+
+              {/* URL共有ボタン群 */}
+              <div className="space-y-3">
+                <button
+                  onClick={shareOnX}
+                  className="w-full py-4 bg-[#0f1419] text-white rounded-2xl font-black hover:opacity-90 transition-all shadow-lg flex items-center justify-center gap-2"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                  Xで結果を共有する
+                </button>
+                <button
+                  onClick={shareOnLine}
+                  className="w-full py-4 bg-[#06C755] text-white rounded-2xl font-black hover:opacity-90 transition-all shadow-lg flex items-center justify-center gap-2"
+                >
+                  <span className="text-lg">LINE</span>
+                  結果を友達に送る
+                </button>
+              </div>
+            </div>
+
             <button 
               onClick={() => { setStep(0); setAnswer(""); }}
-              className="text-xs text-purple-300 font-bold underline decoration-purple-100 underline-offset-4 hover:text-purple-400 transition-colors pt-4"
+              className="text-xs text-purple-300 font-bold underline decoration-purple-100 underline-offset-4 hover:text-purple-400 transition-colors pt-8 pb-4"
             >
               再診断を受ける
             </button>
