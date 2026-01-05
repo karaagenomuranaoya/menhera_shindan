@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Trash2, Link as LinkIcon, Check } from "lucide-react"; // アイコン追加
+import { motion, AnimatePresence } from "framer-motion";
+import { Trash2, Link as LinkIcon, Check, HelpCircle, Copy, X } from "lucide-react";
 import OgImagePreview from "./components/OgImagePreview";
 
 // 質問の候補リスト
@@ -30,20 +30,33 @@ export default function DiagnosisClient() {
   const [selectedQuestion, setSelectedQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState<DiagnosisResult | null>(null);
-  const [copied, setCopied] = useState(false); // コピー完了状態
+  const [copied, setCopied] = useState(false);
+  
+  // 安全装置：初期ロード完了フラグ
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // ヒント機能用ステート
+  const [showHint, setShowHint] = useState(false);
+  const [promptCopied, setPromptCopied] = useState(false);
+  const [randomLevel, setRandomLevel] = useState(80);
 
   // 初回ロード時にローカルストレージから復元
   useEffect(() => {
-    const savedAnswer = localStorage.getItem(STORAGE_KEY);
-    if (savedAnswer) {
-      setAnswer(savedAnswer);
+    if (typeof window !== "undefined") {
+      const savedAnswer = localStorage.getItem(STORAGE_KEY);
+      if (savedAnswer) {
+        setAnswer(savedAnswer);
+      }
+      setIsLoaded(true); // 読み込み完了！
     }
   }, []);
 
-  // 回答が変更されるたびにローカルストレージに保存
+  // 読み込み完了後のみ、変更を保存（これで消失を防ぐ）
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, answer);
-  }, [answer]);
+    if (isLoaded) {
+      localStorage.setItem(STORAGE_KEY, answer);
+    }
+  }, [answer, isLoaded]);
 
   useEffect(() => {
     if (step === 0) {
@@ -52,7 +65,26 @@ export default function DiagnosisClient() {
     }
   }, [step]);
 
-  // 全消去機能
+  const openHint = () => {
+    setRandomLevel(Math.floor(Math.random() * 100) + 20);
+    setShowHint(true);
+  };
+
+  const hintPrompt = `あなたはメンヘラ女子です。
+以下のお題に対して，指定されたメンヘラ度の強さで、60文字程度で答えを考えてください。
+
+お題：${selectedQuestion}
+メンヘラ度：${randomLevel}%
+
+では，お願いします。`;
+
+  const copyPrompt = () => {
+    navigator.clipboard.writeText(hintPrompt).then(() => {
+      setPromptCopied(true);
+      setTimeout(() => setPromptCopied(false), 2000);
+    });
+  };
+
   const clearAnswer = () => {
     if (confirm("入力内容をすべて消去しますか？")) {
       setAnswer("");
@@ -71,12 +103,24 @@ export default function DiagnosisClient() {
           answer: answer 
         }),
       });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.details || "サーバーエラー");
+      }
+
       const data = await res.json();
+      
+      if (!data || !data.grade) {
+        throw new Error("データ形式が不正です");
+      }
+
       setResult(data);
       setStep(3);
-    } catch (e) {
-      alert("診断エラー！もう一度試してみてね。");
-      setStep(1);
+    } catch (e: any) {
+      console.error("Diagnosis Error:", e);
+      alert("診断中にエラーが発生しました。\n入力内容はそのまま残してあるので、時間をおいてもう一度試してみてね。");
+      setStep(1); 
     }
   };
 
@@ -96,7 +140,6 @@ export default function DiagnosisClient() {
     window.open(lineUrl, "_blank");
   };
 
-  // リンクコピー機能
   const copyLink = () => {
     if (!result) return;
     const shareUrl = `${window.location.origin}/result/${result.id}`;
@@ -106,17 +149,17 @@ export default function DiagnosisClient() {
     });
   };
 
-  // 再診断（リセット）処理
+  // 【修正】ここです！勝手に消さないようにしました。
   const handleRestart = () => {
     setStep(0);
-    setAnswer("");
-    localStorage.removeItem(STORAGE_KEY);
+    // setAnswer("");  ← 削除
+    // localStorage.removeItem(STORAGE_KEY); ← 削除
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
     <main className="min-h-screen bg-[#f8f5ff] text-purple-900 flex flex-col items-center justify-center p-4 font-sans selection:bg-purple-200">
-      <div className="w-full max-w-md bg-white/70 p-6 rounded-[2.5rem] border border-purple-100 shadow-2xl shadow-purple-200/50 backdrop-blur-xl">
+      <div className="w-full max-w-md bg-white/70 p-6 rounded-[2.5rem] border border-purple-100 shadow-2xl shadow-purple-200/50 backdrop-blur-xl relative">
         
         <h1 className="text-2xl font-black text-center mb-8 tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-purple-500 to-pink-400">
           AIメンヘラ診断<br/><span className="text-xs font-bold text-purple-300 tracking-normal">AI Menhera Check</span>
@@ -124,8 +167,6 @@ export default function DiagnosisClient() {
 
         {step === 0 && (
           <div className="text-center space-y-6">
-            
-            {/* バナー画像 */}
             <div className="w-full overflow-hidden rounded-2xl shadow-md border-2 border-white/50">
               <img 
                 src="/banner.png" 
@@ -133,7 +174,6 @@ export default function DiagnosisClient() {
                 className="w-full h-auto object-cover"
               />
             </div>
-
             <p className="text-purple-400/80 text-sm leading-relaxed font-medium">あなたの愛の重さを<br/>メンヘラのお友達AIが診断します。</p>
             <button 
               onClick={() => setStep(1)} 
@@ -159,7 +199,6 @@ export default function DiagnosisClient() {
                 onChange={(e) => setAnswer(e.target.value)}
               />
               
-              {/* 全消去ボタン */}
               {answer && (
                 <button
                   onClick={clearAnswer}
@@ -171,7 +210,15 @@ export default function DiagnosisClient() {
               )}
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex justify-between items-center">
+              <button 
+                onClick={openHint}
+                className="text-[10px] text-purple-400 flex items-center gap-1 hover:underline hover:text-purple-600 transition-colors"
+              >
+                <HelpCircle size={14} />
+                思いつかない...
+              </button>
+
               <span className="text-[10px] text-purple-300 font-bold">
                 {answer.length} 文字の愛
               </span>
@@ -186,6 +233,58 @@ export default function DiagnosisClient() {
             </button>
           </motion.div>
         )}
+
+        {/* お助けモーダル */}
+        <AnimatePresence>
+          {showHint && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setShowHint(false);
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="bg-white w-full max-w-sm p-6 rounded-[2rem] shadow-2xl border border-purple-100 relative"
+              >
+                <button 
+                  onClick={() => setShowHint(false)}
+                  className="absolute top-4 right-4 text-purple-300 hover:text-purple-500 p-2"
+                >
+                  <X size={20} />
+                </button>
+
+                <h3 className="text-center text-purple-600 font-bold mb-4">
+                  他のお友達(AI)に<br/>聞いてみる？
+                </h3>
+                
+                <p className="text-xs text-purple-800/80 mb-4 leading-relaxed">
+                  思いつかないの？なら、この文章を<span className="font-bold text-pink-500">ChatGPT</span>とか<span className="font-bold text-pink-500">Gemini</span>のお友達に送って、書いてもらうといいわよ。
+                </p>
+
+                <div className="bg-purple-50 p-4 rounded-xl border border-purple-100 text-xs text-purple-700 font-mono mb-4 whitespace-pre-wrap relative group">
+                  {hintPrompt}
+                  
+                  <button 
+                    onClick={copyPrompt}
+                    className="absolute top-2 right-2 p-2 bg-white rounded-lg shadow-sm border border-purple-100 text-purple-400 hover:text-pink-500 transition-colors"
+                  >
+                    {promptCopied ? <Check size={16} /> : <Copy size={16} />}
+                  </button>
+                </div>
+
+                <div className="text-center text-[10px] text-purple-300 font-bold animate-pulse">
+                  待ってるね。
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {step === 2 && (
           <div className="text-center py-20">
@@ -262,7 +361,6 @@ export default function DiagnosisClient() {
               <OgImagePreview id={result.id} />
 
               <div className="space-y-3">
-                {/* 補足メッセージ */}
                 <p className="text-[10px] text-purple-400/80 mb-2 font-medium">
                   ※作成画面で画像が出なくても、投稿すれば表示されます
                 </p>
@@ -286,7 +384,6 @@ export default function DiagnosisClient() {
                     友達に教える
                   </button>
                   
-                  {/* リンクコピーボタン */}
                   <button
                     onClick={copyLink}
                     className="flex-1 py-4 bg-white border-2 border-purple-100 text-purple-400 rounded-2xl font-bold hover:bg-purple-50 transition-all shadow-sm flex items-center justify-center gap-1 active:scale-95"
