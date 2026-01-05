@@ -70,7 +70,7 @@ export default function DiagnosisClient() {
     setShowHint(true);
   };
 
-  const hintPrompt = `あなたはメンヘラ女子です。
+  const hintPrompt = `あなたはメンヘラ気味の女の子です。
 以下のお題に対して、指定されたメンヘラ度の強さで、100文字程度で答えを考えてください。
 
 お題：${selectedQuestion}
