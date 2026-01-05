@@ -116,6 +116,17 @@ export default function DiagnosisClient() {
 
         {step === 0 && (
           <div className="text-center space-y-6">
+            
+             {/* ▼▼▼ 追加: バナー画像 ▼▼▼ */}
+            <div className="w-full overflow-hidden rounded-2xl shadow-md border-2 border-white/50">
+              <img 
+                src="/banner.png" 
+                alt="Main Banner" 
+                className="w-full h-auto object-cover"
+              />
+            </div>
+            {/* ▲▲▲ 追加ここまで ▲▲▲ */}
+            
             <p className="text-purple-400/80 text-sm leading-relaxed font-medium">あなたの愛の重さを<br/>メンヘラのお友達AIが診断します。</p>
             <button 
               onClick={() => setStep(1)} 
