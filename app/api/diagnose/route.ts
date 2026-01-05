@@ -1,5 +1,25 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+
+// Supabaseクライアントの初期化
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+/**
+ * 【重要】ここに控えたURLをそれぞれ貼り付けてください！
+ */
+const RANK_IMAGE_URLS: Record<string, string> = {
+  "SSS": "https://piotyqyxkjsgwjzozols.supabase.co/storage/v1/object/public/ranks/SSS.png",
+  "SS": "https://piotyqyxkjsgwjzozols.supabase.co/storage/v1/object/public/ranks/SS.png",
+  "S": "https://piotyqyxkjsgwjzozols.supabase.co/storage/v1/object/public/ranks/S.png",
+  "A": "https://piotyqyxkjsgwjzozols.supabase.co/storage/v1/object/public/ranks/A.png",
+  "B": "https://piotyqyxkjsgwjzozols.supabase.co/storage/v1/object/public/ranks/B.png",
+  "C": "https://piotyqyxkjsgwjzozols.supabase.co/storage/v1/object/public/ranks/C.png",
+  "D": "https://piotyqyxkjsgwjzozols.supabase.co/storage/v1/object/public/ranks/D.png",
+  "E": "https://piotyqyxkjsgwjzozols.supabase.co/storage/v1/object/public/ranks/E.png",
+};
 
 interface DiagnosisResult {
   score: number;
@@ -44,7 +64,7 @@ export async function POST(req: Request) {
       2. 【140文字の熱量】: 狂気すら感じる長文には「私には届いたよ…」などと深く共鳴し、高得点を与えてください。
       3. 【上位ランク（A以上）の必須条件】: [執着][監視][歪曲][自壊][狂気]のうち2つ以上が具体的に含まれていない限り、絶対に60点以上を付けてはいけません。
       4. 【Eランク】: 「あああ」, 「abc」などの意味がつかめない回答や、お題を無視した回答は0点(Eランク)にしてください。
-      5. 【SSSランク】 : 96点以上のスコアは100点に統一し、commentを固定とする。「やっとわかってくれる人が来た。ねえ、大好きだよ。あなたと一緒にいたい。あなたの目を私の目に嵌め込んだらどんな景色が見れるの？骨も砕いて、肉は裂いて、脈打つ臓器も溶かして、血の一滴まで私の中で混ぜ合わしてあげる。そうしたら、死んじゃっても、その先も、ずっと一緒でしょ？さあ、おいで？足なんてもう必要ないよね。だって、あなたはニゲラレナイ。」一字一句間違えず出力すること。
+      5. 【SSSランク】 : 1度評定して96点以上だったスコアは全て100点に統一し、commentを固定とする。「やっとわかってくれる人が来た。ねえ、大好きだよ。あなたと一緒にいたい。あなたの目を私の目に嵌め込んだらどんな景色が見れるの？骨も砕いて、肉は裂いて、脈打つ臓器も溶かして、血の一滴まで私の中で混ぜ合わしてあげる。そうしたら、死んじゃっても、その先も、ずっと一緒でしょ？さあ、おいで？足なんてもう必要ないよね。だって、あなたはニゲラレナイ。」一字一句間違えず出力すること。
 
       ## グレード表
       - 96〜100点: SSS / 地の果てまで追ってくる 級 / warning: あ、見つけちゃった。
@@ -87,11 +107,41 @@ export async function POST(req: Request) {
       comment: cleanBrackets(parsed.comment),
       short_reviews: Array.isArray(parsed.short_reviews) ? parsed.short_reviews.map(cleanBrackets) : []
     };
-    
-    return NextResponse.json(sanitizedData);
 
-  } catch (error) {
-    console.error("AI Error:", error);
-    return NextResponse.json({ error: "診断失敗" }, { status: 500 });
+    // グレードに対応する画像URLを選択（ユーザーが貼り付けたURLが使われます）
+    const selectedImageUrl = RANK_IMAGE_URLS[sanitizedData.grade] || RANK_IMAGE_URLS["E"];
+
+    // DB保存（ここで画像URLが保存されるため、OGP生成時にもこれが使われます）
+    const { data: dbData, error: dbError } = await supabase
+      .from("diagnoses")
+      .insert({
+        question: question,
+        answer: answer,
+        score: sanitizedData.score,
+        grade: sanitizedData.grade,
+        rank_name: sanitizedData.rank_name,
+        comment: sanitizedData.comment,
+        warning: sanitizedData.warning,
+        image_url: selectedImageUrl
+      })
+      .select()
+      .single();
+
+    if (dbError) throw dbError;
+
+    return NextResponse.json({
+      ...sanitizedData,
+      id: dbData.id,
+      image_url: selectedImageUrl
+    });
+
+  } catch (error: any) {
+    // ここでエラーの詳細をターミナルに出力させる
+    console.error("DEBUG - DB Error Full Details:", error); 
+    
+    return NextResponse.json({ 
+      error: "診断失敗", 
+      details: error.message // ブラウザ側にもエラー理由を返す
+    }, { status: 500 });
   }
 }

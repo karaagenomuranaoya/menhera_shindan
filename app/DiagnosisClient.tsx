@@ -12,11 +12,12 @@ const QUESTION_CANDIDATES = [
 ];
 
 type DiagnosisResult = {
+  id: string; // DBのIDを追加
   score: number;
   grade: "SSS" | "SS" | "S" | "A" | "B" | "C" | "D" | "E";
   rank_name: string;
   warning: string;
-  chart: { humidity: number; pressure: number; delusion: number };
+  image_url: string; // 追加
   comment: string;
 };
 
@@ -58,17 +59,10 @@ export default function DiagnosisClient() {
     
     const text = `AIメンヘラ診断：結果は【${result.grade}ランク】でした！\n#AIメンヘラ診断\n`;
     
-    // パラメータを極限まで短縮
-    // g: grade, s: score, n: rank_name, a: answer, c: comment
-    const shareUrl = new URL(window.location.origin);
-    shareUrl.searchParams.set("g", result.grade);
-    shareUrl.searchParams.set("s", result.score.toString());
-    shareUrl.searchParams.set("n", result.rank_name);
-    // 長い日本語はエンコードで肥大化するため、表示に必要な分だけ残してカット
-    shareUrl.searchParams.set("a", answer.slice(0, 20)); 
-    shareUrl.searchParams.set("c", result.comment.slice(0, 45));
+    // DBに保存された個別ページのURLを共有
+    const shareUrl = `${window.location.origin}/result/${result.id}`;
 
-    const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl.toString())}`;
+    const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
     window.open(xUrl, "_blank");
   };
 
@@ -137,7 +131,7 @@ export default function DiagnosisClient() {
               >
                 <div className="absolute inset-0 bg-gradient-to-tr from-pink-300 to-purple-300 rounded-[2.5rem] blur-3xl opacity-40 animate-pulse"></div>
                 <img 
-                  src={`/${result.grade}.png`} 
+                  src={result.image_url} 
                   alt={result.grade}
                   className="relative w-full h-full object-cover rounded-[2rem] border-4 border-white shadow-xl"
                 />

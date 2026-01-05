@@ -1,21 +1,29 @@
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'edge';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
 
-    // 短縮パラメータの取得
-    // g: grade, s: score, n: rankName, a: answer, c: comment
-    const grade = searchParams.get('g') || 'E';
-    const score = searchParams.get('s') || '0';
-    const rankName = searchParams.get('n') || '判定不能';
-    const answer = searchParams.get('a') || '';
-    const comment = searchParams.get('c') || '';
+    if (!id) return new Response('Missing id', { status: 400 });
 
-    const baseUrl = new URL(req.url).origin;
+    const { data, error } = await supabase
+        .from('diagnoses')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (error || !data) return new Response('Result not found', { status: 404 });
+
+    const { grade, score, rank_name, answer, comment, question, image_url } = data;
 
     return new ImageResponse(
       (
@@ -50,31 +58,67 @@ export async function GET(req: NextRequest) {
               flexDirection: 'row',
             }}
           >
-            {/* 左側：ランク画像と名前 */}
+            {/* 左側：ランク・画像・スコア */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '40%', justifyContent: 'center' }}>
-              <div style={{ fontSize: '24px', fontWeight: '900', color: '#d8b4fe', marginBottom: '10px', letterSpacing: '0.2em' }}>RESULT</div>
+              
+              {/* RESULTラベル */}
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#d8b4fe', marginBottom: '0px', letterSpacing: '0.2em' }}>RESULT</div>
+
+              {/* Grade（派手に追加） */}
+              <div style={{ 
+                fontSize: '70px', 
+                fontWeight: '900', 
+                color: '#f472b6', // ピンク色
+                fontStyle: 'italic', 
+                marginBottom: '10px',
+                textShadow: '0 4px 10px rgba(244, 114, 182, 0.4)', // 光るような影
+                lineHeight: 1,
+                display: 'flex'
+              }}>
+                Rank : {grade}
+              </div>
+
+              {/* 画像 */}
               <img
-                src={`${baseUrl}/${grade}.png`}
+                src={image_url}
                 alt={grade}
                 style={{
-                  width: '240px',
-                  height: '240px',
+                  width: '280px',
+                  height: '280px',
                   borderRadius: '30px',
                   border: '4px solid white',
                   boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
                   objectFit: 'cover',
+                  marginBottom: '15px',
                 }}
               />
-              <div style={{ marginTop: '20px', fontSize: '28px', fontWeight: '900', color: '#6b21a8', textAlign: 'center' }}>
-                {rankName}
+
+              {/* ランク名 */}
+              <div style={{ fontSize: '24px', fontWeight: '900', color: '#6b21a8', textAlign: 'center', marginBottom: '5px' }}>
+                {rank_name}
               </div>
-              <div style={{ fontSize: '50px', fontWeight: '900', color: '#f472b6', fontStyle: 'italic' }}>
-                {`Score: ${score}`}
-                </div>
+
+              {/* Score（派手に変更） */}
+              <div style={{ 
+                fontSize: '40px', 
+                fontWeight: '900', 
+                color: '#ec4899', // 濃いピンク
+                fontStyle: 'italic',
+                textShadow: '0 2px 5px rgba(236, 72, 153, 0.3)',
+                display: 'flex'
+              }}>
+                Score : {score}
+              </div>
             </div>
 
-            {/* 右側：回答とコメント */}
+            {/* 右側：質問・回答・コメント */}
             <div style={{ display: 'flex', flexDirection: 'column', width: '60%', paddingLeft: '40px', justifyContent: 'center' }}>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '15px' }}>
+                <div style={{ fontSize: '10px', fontWeight: '900', color: '#d8b4fe', marginBottom: '3px' }}>QUESTION</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#6b21a8' }}>{question}</div>
+              </div>
+
               <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '20px' }}>
                 <div style={{ fontSize: '12px', fontWeight: '900', color: '#f472b6', marginBottom: '5px' }}>YOUR ANSWER</div>
                 <div style={{ fontSize: '18px', fontWeight: '700', color: '#1e1b4b', backgroundColor: 'white', padding: '15px', borderRadius: '20px', border: '1px solid #fae8ff' }}>
@@ -97,10 +141,7 @@ export async function GET(req: NextRequest) {
           </div>
         </div>
       ),
-      {
-        width: 1200,
-        height: 630,
-      }
+      { width: 1200, height: 630 }
     );
   } catch (e: any) {
     return new Response(`Failed to generate image`, { status: 500 });
