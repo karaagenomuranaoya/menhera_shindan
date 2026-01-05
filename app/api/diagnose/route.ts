@@ -83,7 +83,7 @@ export async function POST(req: Request) {
         "rank_name": string,
         "warning": string,
         "chart": { "humidity": 0〜100, "pressure": 0〜100, "delusion": 0〜100 },
-        "comment": "同志としての深く痛いほど共鳴する総評(120文字程度)",
+        "comment": "同じ気持ちを持つ親友としての深く痛いほど共鳴する総評(120文字程度)",
       }
     `;
 
