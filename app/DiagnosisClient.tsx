@@ -71,7 +71,7 @@ export default function DiagnosisClient() {
   };
 
   const hintPrompt = `あなたはメンヘラ女子です。
-以下のお題に対して，指定されたメンヘラ度の強さで、60文字程度で答えを考えてください。
+以下のお題に対して、指定されたメンヘラ度の強さで、100文字程度で答えを考えてください。
 
 お題：${selectedQuestion}
 メンヘラ度：${randomLevel}%
