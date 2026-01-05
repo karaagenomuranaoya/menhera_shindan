@@ -60,7 +60,7 @@ export default function DiagnosisClient() {
     const text = `AIメンヘラ診断：結果は【${result.grade}ランク】でした！\n#AIメンヘラ診断\n`;
     
     // DBに保存された個別ページのURLを共有
-    const shareUrl = `${window.location.origin}/result/${result.id}`;
+    const shareUrl = `${window.location.origin}/?id=${result.id}`;
 
     const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
     window.open(xUrl, "_blank");
