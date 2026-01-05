@@ -71,7 +71,7 @@ export default function DiagnosisClient() {
   // 共有するテキスト
   const text = `AIメンヘラ診断：結果は【${result.grade}ランク】でした`;
   // 共有するURL（OGPが設定されている個別ページURL）
-  const shareUrl = `${window.location.origin}/result/${result.id}`; 
+  const shareUrl = `${window.location.origin}/?id=${result.id}`; 
 
   // LINEのシェア用URL生成
   const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
