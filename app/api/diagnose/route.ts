@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     question = body.question;
     answer = body.answer;
-
+    const charCount = answer.length; // ★追加：文字数をプログラム側で数える
 
     const apiKey = process.env.GOOGLE_API_KEY;
     if (!apiKey) {
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       ## ユーザーの回答
       お題: ${question}
       回答: ${answer}
-
+      回答文字数: ${charCount}文字
 
       ## 採点・格付けの「お友達」ルール
       1. 【定型文・短文への嘆き】: 「おーい」「何してるの？」などの工夫のない短文や、純粋な愛のみを感じる回答は、愛の重さが足りないため、20点（Dランク）以下にしてください。

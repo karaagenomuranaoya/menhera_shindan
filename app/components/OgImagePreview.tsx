@@ -36,7 +36,7 @@ export default function OgImagePreview({ id }: Props) {
     <div className="w-full max-w-lg mx-auto mt-6 mb-8 space-y-4">
       <div className="text-center space-y-1">
         <h3 className="text-sm font-bold text-purple-400 tracking-widest">
-          DIAGNOSIS CARD
+          Menhera Karte
         </h3>
         <p className="text-[10px] text-purple-300">
           タップして画像を保存
