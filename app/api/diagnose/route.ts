@@ -37,6 +37,11 @@ interface DiagnosisResult {
   comment: string;
 }
 
+// ランクの並び順定義（ソート用）
+const gradeOrder: Record<string, number> = {
+  "SSS": 0, "SS": 1, "S": 2, "A": 3, "B": 4, "C": 5, "D": 6, "E": 7
+};
+
 // レートリミッター
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || "http://localhost:3000",
@@ -93,63 +98,38 @@ export async function POST(req: Request) {
 
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({
-          model: "gemini-2.0-flash",
+          model: "gemini-2.0-flash", // Flash Liteではなく性能の高いFlashを使用
           generationConfig: { responseMimeType: "application/json" },
         });
 
         // =========================================================
-        // ▼▼▼ 学習データの抽出ロジック ▼▼▼
+        // ▼▼▼ 学習データの抽出ロジック（全件読み込み・ソート版） ▼▼▼
         // =========================================================
         
         let examplesText = "";
 
-        if (judgementData && judgementData.length > 0) {
-          // 1. データをグレード別にグループ化
-          const groupedData: Record<string, typeof judgementData> = {
-            "SSS": [], "SS": [], "S": [], "A": [], 
-            "B": [], "C": [], "D": [], "E": []
-          };
+        // 通常データとコーナーケースを結合
+        const allExamples = [...judgementData, ...cornerCases];
 
-          judgementData.forEach((row) => {
-            const g = row.grade;
-            if (groupedData[g]) {
-              groupedData[g].push(row);
-            }
+        if (allExamples.length > 0) {
+          // ランク順（SSS -> E）にソート
+          // これによりAIが「基準のグラデーション」を正しく理解しやすくなります
+          const sortedExamples = allExamples.sort((a, b) => {
+            return (gradeOrder[a.grade] ?? 99) - (gradeOrder[b.grade] ?? 99);
           });
 
-          // 2. 各グレードからランダムに1件ずつ抽出
-          const targetGrades = ["SSS", "SS", "S", "A", "B", "C", "D", "E"];
-          const pickedExamples = [];
+          examplesText = "## 過去の採点事例（これらはお手本です。特に文字数や内容の濃さを基準として比較・模倣してください）\n";
+          
+          sortedExamples.forEach((ex) => {
+            const outputExample = {
+              score: ex.score,
+              grade: ex.grade,
+              rank_name: ex.rank_name,
+              warning: ex.warning,
+              comment: ex.comment
+            };
 
-          for (const grade of targetGrades) {
-            const candidates = groupedData[grade];
-            if (candidates && candidates.length > 0) {
-              // ランダム抽選
-              const randomIndex = Math.floor(Math.random() * candidates.length);
-              pickedExamples.push(candidates[randomIndex]);
-            }
-          }
-
-          // 3. 【重要】「固定のコーナーケース」と「ランダム抽出」を合体させる
-          const finalExamples = [
-            ...cornerCases,   // ★絶対に含める教訓データ
-            ...pickedExamples // ★バランス用のランダムデータ
-          ];
-
-          // 4. テキスト形式に整形
-          if (finalExamples.length > 0) {
-            examplesText = "## 過去の採点事例（これらはお手本です。特に文字数や内容の濃さを基準として比較・模倣してください）\n";
-            
-            finalExamples.forEach((ex) => {
-              const outputExample = {
-                score: ex.score,
-                grade: ex.grade,
-                rank_name: ex.rank_name,
-                warning: ex.warning,
-                comment: ex.comment
-              };
-
-              examplesText += `
+            examplesText += `
 Input:
 お題: ${ex.question}
 回答: ${ex.answer}
@@ -159,12 +139,11 @@ Output:
 ${JSON.stringify(outputExample, null, 2)}
 ---
 `;
-            });
-          }
-        } // ★★★ ここで if ブロックを閉じました ★★★
+          });
+        }
 
         // =========================================================
-        // ▼▼▼ プロンプト作成 ▼▼▼
+        // ▼▼▼ プロンプト作成（提供されたものをそのまま使用） ▼▼▼
         // =========================================================
         
         const prompt = `
