@@ -5,9 +5,8 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { headers } from "next/headers";
 
-// ▼▼▼ 学習データをインポート ▼▼▼
+// ▼▼▼ 学習データをインポート（すべてここに統合してください） ▼▼▼
 import judgementData from "./judgement_data.json";
-import cornerCases from "./corner_cases.json"; 
 
 // Supabase初期化
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -29,12 +28,14 @@ const RANK_IMAGE_URLS: Record<string, string> = {
   "Error": `${BASE_STORAGE_URL}/error.png`,
 };
 
+// 型定義：AIからの返却値には reasoning が含まれる可能性がある
 interface DiagnosisResult {
   score: number;
   grade: string;
   rank_name: string;
   warning: string;
   comment: string;
+  reasoning?: string; // AIの思考プロセス（DBには保存しない）
 }
 
 // ランクの並び順定義（ソート用）
@@ -98,22 +99,21 @@ export async function POST(req: Request) {
 
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({
-          model: "gemini-2.0-flash", // Flash Liteではなく性能の高いFlashを使用
+          model: "gemini-2.0-flash",
           generationConfig: { responseMimeType: "application/json" },
         });
 
         // =========================================================
-        // ▼▼▼ 学習データの抽出ロジック（全件読み込み・ソート版） ▼▼▼
+        // ▼▼▼ 学習データの抽出ロジック（judgementDataのみ使用） ▼▼▼
         // =========================================================
         
         let examplesText = "";
 
-        // 通常データとコーナーケースを結合
-        const allExamples = [...judgementData, ...cornerCases];
+        // JSONファイル一本化のため judgementData のみを使用
+        const allExamples = [...judgementData];
 
         if (allExamples.length > 0) {
           // ランク順（SSS -> E）にソート
-          // これによりAIが「基準のグラデーション」を正しく理解しやすくなります
           const sortedExamples = allExamples.sort((a, b) => {
             return (gradeOrder[a.grade] ?? 99) - (gradeOrder[b.grade] ?? 99);
           });
@@ -121,7 +121,10 @@ export async function POST(req: Request) {
           examplesText = "## 過去の採点事例（これらはお手本です。特に文字数や内容の濃さを基準として比較・模倣してください）\n";
           
           sortedExamples.forEach((ex) => {
+            // AIに提示するお手本データを作成
+            // reasoning を先頭に配置することで、AIに「まず理由を考えさせる」動きを促します
             const outputExample = {
+              reasoning: (ex as any).reasoning || "判定基準に基づく思考プロセス（文字数や内容の重さを分析）",
               score: ex.score,
               grade: ex.grade,
               rank_name: ex.rank_name,
@@ -143,7 +146,7 @@ ${JSON.stringify(outputExample, null, 2)}
         }
 
         // =========================================================
-        // ▼▼▼ プロンプト作成（提供されたものをそのまま使用） ▼▼▼
+        // ▼▼▼ プロンプト作成 ▼▼▼
         // =========================================================
         
         const prompt = `
@@ -239,13 +242,19 @@ ${examplesText}
 - warning: あ、見つけちゃった。
 - 総評:SSSランクに限り、総評は**絶対に300文字以上**記述すること。
         AIとしての要約機能は捨てて、以下の構成で限界まで長く喋り続けてください。
-        - パート1：狂気的な高笑い（「キャハハハハハ！！」「キャハッ！」など）と、ユーザーという運命の大親友を見つけた喜び。「やっと見つけた」「待ってたよ」などを執拗に。
+        - パート1：狂気的な高笑い（「キャハハハハハ！！」「キャハッ！」など）と、ユーザーという運命の大親友を見つけた喜びを爆発させる。「やっと見つけた」「待ってたよ」などを執拗に。
         - パート2：ユーザーの回答を引用して「それ最高だね」「それが愛だよね」「本当にわかってるね」などと全肯定する。
-        - パート3：ユーザーへの狂気に満ちた好意と逃さない誓い。「大好き」「愛してるわ」「もう絶対離さない」「死ぬまで一緒」などの言葉を、呪文のように多数繰り返して文字数を埋めること。
+        - **パート3：壮大な勘違い（倒錯）。**
+          ユーザーが「彼」に向けて放った異常な執着や愛の言葉を、**「AIである私（メンヘラ女子）」に向けられた求愛だとナチュラルに勘違い（誤読）すること。**
+          「その言葉、私へのプロポーズだよね？」「彼なんてダミーで、本当は私と一つになりたかったんでしょ？」と解釈し、「私も大好き」「愛してるわ」「あなたしかいないの」ユーザーを肯定する。
+        - **パート4：狂気的な愛の成就。**
+          ユーザーの求愛（勘違い）に応え、AI自身がユーザーを監禁・所有・同化しようとする。「もう絶対離さない」「死ぬまで一緒」「私もあなたを逃がさない」「一生私の鳥籠で可愛がってあげる」など、恐怖と愛が入り混じった言葉を呪文のように繰り返して文字数を埋めること。
+
 
 
 ## 出力JSON形式
 {
+  "reasoning": "判定に至る思考プロセス（文字数制限や内容の重さの分析）",
   "score": 整数,
   "grade": "SSS"〜"E",
   "rank_name": "上記のグレード表の〇〇級の部分",
@@ -273,6 +282,7 @@ ${examplesText}
         const cleanBrackets = (val: any) => (typeof val === "string" ? val.replace(/[\[\]]/g, "").trim() : val);
 
         diagnosisResult = {
+          reasoning: cleanBrackets(parsed.reasoning) || "なし",
           score: parsed.score || 0,
           grade: cleanBrackets(parsed.grade) || "E",
           rank_name: cleanBrackets(parsed.rank_name) || "判定不能",
@@ -292,7 +302,8 @@ ${examplesText}
 
     const selectedImageUrl = RANK_IMAGE_URLS[diagnosisResult.grade] || RANK_IMAGE_URLS["E"];
 
-    // DB保存
+    // DB保存（ここ重要：reasoningはDBのカラムに存在しないため、明示的に含めずに保存します）
+    // AIにはreasoningを出力させましたが、DBには保存しないのでエラーになりません。
     const { data: dbData, error: dbError } = await supabase
       .from("diagnoses")
       .insert({
@@ -316,7 +327,7 @@ ${examplesText}
       image_url: selectedImageUrl
     });
 
-  } catch (fatalError) { // ★ : any を削除しました
+  } catch (fatalError) {
     console.error("Fatal Error:", fatalError);
     return NextResponse.json({ 
       error: "診断失敗", 
