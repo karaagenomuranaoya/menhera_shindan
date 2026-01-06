@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trash2, Link as LinkIcon, Check, HelpCircle, Copy, X } from "lucide-react";
 import OgImagePreview from "./components/OgImagePreview";
+import TermsModal from "./components/TermsModal"; // ★追加
 
 // 質問の候補リスト
 const QUESTION_CANDIDATES = [
@@ -31,7 +32,10 @@ export default function DiagnosisClient() {
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState<DiagnosisResult | null>(null);
   const [copied, setCopied] = useState(false);
-  
+
+  //利用規約
+  const [showTerms, setShowTerms] = useState(false); 
+
   // 安全装置：初期ロード完了フラグ
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -233,6 +237,15 @@ export default function DiagnosisClient() {
             </button>
           </motion.div>
         )}
+         {/* ★追加: 利用規約へのリンク（全ステップ共通でカードの最下部に表示） */}
+        <div className="mt-8 pt-4 border-t border-purple-50 text-center">
+          <button
+            onClick={() => setShowTerms(true)}
+            className="text-[10px] text-purple-300 hover:text-purple-500 underline decoration-dotted underline-offset-2 transition-colors"
+          >
+            利用規約・データの扱いについて
+          </button>
+        </div>
 
         {/* お助けモーダル */}
         <AnimatePresence>
@@ -285,6 +298,9 @@ export default function DiagnosisClient() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* ★追加: 利用規約モーダル */}
+        <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
 
         {step === 2 && (
           <div className="text-center py-20">
@@ -362,7 +378,8 @@ export default function DiagnosisClient() {
 
               <div className="space-y-3">
                 <p className="text-[10px] text-purple-400/80 mb-2 font-medium">
-                  ※作成画面で画像が出なくても、投稿すれば表示されます
+                  綺麗なカードと一緒にあなたの結果を共有できるよ。<br />
+                  ※作成画面で画像が出なくても、投稿すれば表示されるからね。
                 </p>
 
                 <button
