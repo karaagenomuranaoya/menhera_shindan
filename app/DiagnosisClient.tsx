@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trash2, Link as LinkIcon, Check, HelpCircle, Copy, X } from "lucide-react";
 import OgImagePreview from "./components/OgImagePreview";
-import TermsModal from "./components/TermsModal"; // ★追加
+import TermsModal from "./components/TermsModal";
 import { ChevronLeft } from "lucide-react"; 
 
 // 質問の候補リスト
@@ -119,13 +119,10 @@ export default function DiagnosisClient() {
         }),
       });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.details || "サーバーエラー");
-      }
-
+      // ▼▼▼ 修正: ステータスに関わらずJSONを取得する ▼▼▼
       const data = await res.json();
-      
+
+      // もし万が一データが壊れていたらエラーにする（通常ここには来ない）
       if (!data || !data.grade) {
         throw new Error("データ形式が不正です");
       }
@@ -134,7 +131,8 @@ export default function DiagnosisClient() {
       setStep(3);
     } catch (e: any) {
       console.error("Diagnosis Error:", e);
-      alert("診断中にエラーが発生しました。\n入力内容はそのまま残してあるので、時間をおいてもう一度試してみてね。");
+      // 万が一ネットワークエラーなどでfetch自体が失敗した場合のみアラート
+      alert("通信エラーが発生しました。\n時間を置いてもう一度お試しください。");
       setStep(1); 
     }
   };
