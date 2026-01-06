@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Trash2, Link as LinkIcon, Check, HelpCircle, Copy, X } from "lucide-react";
 import OgImagePreview from "./components/OgImagePreview";
 import TermsModal from "./components/TermsModal"; // ★追加
+import { ChevronLeft } from "lucide-react"; 
 
 // 質問の候補リスト
 const QUESTION_CANDIDATES = [
@@ -32,6 +33,16 @@ export default function DiagnosisClient() {
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState<DiagnosisResult | null>(null);
   const [copied, setCopied] = useState(false);
+
+   // タイトルクリック時の挙動
+  const handleTitleClick = () => {
+    if (step > 0) {
+      // 確認ダイアログを出してもいいですが、
+      // 誤操作しても入力内容はlocalStorageに残る仕様にしたので
+      // そのまま戻しちゃってOKです（サクサク感重視）
+      setStep(0);
+    }
+  };
 
   //利用規約
   const [showTerms, setShowTerms] = useState(false); 
@@ -165,9 +176,26 @@ export default function DiagnosisClient() {
     <main className="min-h-screen bg-[#f8f5ff] text-purple-900 flex flex-col items-center justify-center p-4 font-sans selection:bg-purple-200">
       <div className="w-full max-w-md bg-white/70 p-6 rounded-[2.5rem] border border-purple-100 shadow-2xl shadow-purple-200/50 backdrop-blur-xl relative">
         
-        <h1 className="text-2xl font-black text-center mb-8 tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-purple-500 to-pink-400">
-          AIメンヘラ診断<br/><span className="text-xs font-bold text-purple-300 tracking-normal">AI Menhera Check</span>
-        </h1>
+         {/* ▼▼▼ タイトル部分を修正 ▼▼▼ */}
+        <div className="relative mb-8 text-center">
+          {step > 0 && (
+            <button
+              onClick={() => setStep(step - 1)} // 1つ前に戻る、あるいは setStep(0) でトップへ
+              className="absolute left-0 top-1/2 -translate-y-1/2 text-purple-300 p-2 hover:bg-purple-50 rounded-full transition-colors"
+            >
+              <ChevronLeft size={24} />
+            </button>
+          )}
+          
+          <h1 
+            onClick={() => setStep(0)}
+            className={`text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-purple-500 to-pink-400 inline-block ${step > 0 ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}
+          >
+            AIメンヘラ診断<br/>
+            <span className="text-xs font-bold text-purple-300 tracking-normal">AI Menhera Check</span>
+          </h1>
+        </div>
+        {/* ▲▲▲ 修正ここまで ▲▲▲ */}
 
         {step === 0 && (
           <div className="text-center space-y-6">

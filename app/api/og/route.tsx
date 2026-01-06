@@ -13,6 +13,11 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
+    // ★追加: Google FontsからNoto Sans JPを読み込む
+    const fontData = await fetch(
+      new URL('https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/Japanese/NotoSansCJKjp-Bold.otf', import.meta.url)
+    ).then((res) => res.arrayBuffer());
+
     if (!id) return new Response('Missing id', { status: 400 });
 
     const { data, error } = await supabase
@@ -141,7 +146,17 @@ export async function GET(req: NextRequest) {
           </div>
         </div>
       ),
-      { width: 1200, height: 630 }
+      { width: 1200,
+        height: 630, 
+        // ★追加: フォント設定
+        fonts: [
+          {
+            name: 'NotoSansJP',
+            data: fontData,
+            style: 'normal',
+          },
+        ],
+      }
     );
   } catch (e: any) {
     return new Response(`Failed to generate image`, { status: 500 });
