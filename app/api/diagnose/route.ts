@@ -2,6 +2,11 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+// ▼▼▼ 1. 追加 ▼▼▼
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+import { headers } from "next/headers"; // IP取得用
+
 // Supabaseクライアントの初期化
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -29,7 +34,48 @@ interface DiagnosisResult {
   comment: string;
 }
 
+// ▼▼▼ 2. レートリミッターの作成（関数の外で作る） ▼▼▼
+// 環境変数がない場合（開発中など）は作らない
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL || "http://localhost:3000",
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || "dummy",
+});
+
+// 1分間に5回まで（slidingWindow）
+const ratelimit = new Ratelimit({
+  redis: redis,
+  limiter: Ratelimit.slidingWindow(5, "60 s"),
+  analytics: true,
+  prefix: "@upstash/ratelimit",
+});
+
 export async function POST(req: Request) {
+ // ▼▼▼ 3. リクエスト制限のチェック処理 ▼▼▼
+  try {
+    // IPアドレスを取得
+    const headersList = await headers();
+    const ip = headersList.get("x-forwarded-for") ?? "127.0.0.1";
+
+    // 環境変数が設定されている場合のみチェック
+    if (process.env.UPSTASH_REDIS_REST_URL) {
+      const { success } = await ratelimit.limit(ip);
+      
+      if (!success) {
+        return NextResponse.json(
+          { 
+            error: "Too Many Requests", 
+            details: "診断の回数が多すぎます。少し時間を置いてから試してね。" 
+          },
+          { status: 429 } // 429は「リクエスト多すぎ」のエラーコード
+        );
+      }
+    }
+  } catch (e) {
+    console.error("Rate limit check failed:", e);
+    // Redisが落ちててもアプリは動くようにスルーする（安全策）
+  }
+  // ▲▲▲ チェックここまで ▲▲▲
+  
   // エラー時のフォールバックデータ生成関数
   const createErrorData = () => ({
     score: 0,
