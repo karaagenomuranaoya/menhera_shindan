@@ -39,7 +39,7 @@ export default function OgImagePreview({ id }: Props) {
           Menhera Karte
         </h3>
         <p className="text-[10px] text-purple-300">
-          タップして画像を保存
+          左の方を長押しすると写真に保存できるの。
         </p>
       </div>
 
