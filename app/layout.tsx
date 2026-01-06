@@ -20,6 +20,9 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.png", // public/favicon.png を参照
   },
+  verification: {
+    google: 'gTBau9kCei49KzHb9OaBOrOeYj3Mwd_LCn1sktxJqMY', 
+  },
 };
 
 export default function RootLayout({
