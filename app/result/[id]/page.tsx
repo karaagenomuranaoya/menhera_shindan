@@ -16,20 +16,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!data) return { title: '診断結果が見つかりません' };
 
-  const ogUrl = new URL('/api/og', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
+  const ogUrl = new URL('/api/og', process.env.NEXT_PUBLIC_APP_URL || 'https://yamikoi-shindan.vercel.app');
   ogUrl.searchParams.set('id', id);
 
   return {
-    title: `AIメンヘラ診断結果 - ${data.rank_name}`,
+    title: `AI闇恋診断結果 - ${data.rank_name}`,
     description: data.comment,
     openGraph: {
-      title: 'AIメンヘラ診断',
+      title: 'AI闇恋診断',
       description: data.comment,
       images: [ogUrl.toString()],
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'AIメンヘラ診断',
+      title: 'AI闇恋診断',
       description: data.comment,
       images: [ogUrl.toString()],
     },
@@ -64,7 +64,7 @@ export default async function ResultPage({ params }: Props) {
         </div>
 
         <h1 className="text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-purple-500 to-pink-400 mt-4">
-          AIメンヘラ診断結果
+          AI闇恋診断結果
         </h1>
 
         {/* ランク・画像表示エリア */}
