@@ -2,45 +2,43 @@ import { Metadata } from 'next';
 import DiagnosisClient from './DiagnosisClient';
 import { createClient } from '@supabase/supabase-js';
 
-// Supabaseクライアントの初期化（サーバーサイド用）
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// ★ここに指定の最強IDを定義（ここを書き換えるだけで憑依先が変わります）
+const DEFAULT_ID = 'b3dfe464-a323-47f6-a4b7-ccadbb176a58';
 
 type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-// 動的にメタデータを生成
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  // URLの ?id=... を取得
   const { id } = await searchParams;
-
-  // ベースのURL（環境変数かlocalhost）
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://yamikoi-shindan.vercel.app';
 
-  // デフォルトのメタデータ（IDがない場合）
-  const defaultMetadata = {
-    title: "AI 闇恋診断",
-    description: "あなたの愛の重さを闇恋系のお友達AIが診断します。",
-    openGraph: {
+  // IDが指定されていればそれを、なければ最強IDを使用
+  const targetId = (typeof id === 'string' ? id : DEFAULT_ID);
+
+  // DBからデータ取得
+  const { data } = await supabase.from('diagnoses').select('*').eq('id', targetId).single();
+
+  // 万が一デフォルトIDすらDBにない場合の保険（汎用画像へ）
+  if (!data) {
+    return {
       title: "AI 闇恋診断",
       description: "あなたの愛の重さを闇恋系のお友達AIが診断します。",
-      images: [`${baseUrl}/og-default.png`], // デフォルト画像（publicに置く）
-    },
-  };
+      openGraph: {
+        title: "AI 闇恋診断",
+        description: "あなたの愛の重さを闇恋系のお友達AIが診断します。",
+        images: [`${baseUrl}/og-default.png`],
+      },
+    };
+  }
 
-  // IDがないならデフォルトを返す
-  if (!id || typeof id !== 'string') return defaultMetadata;
-
-  // IDがあるならDBから結果を取得して、OGP画像を差し替える
-  const { data } = await supabase.from('diagnoses').select('*').eq('id', id).single();
-
-  if (!data) return defaultMetadata;
-
-  // 動的OGP画像のURLを作成
+  // OGP画像のURLを生成
   const ogUrl = new URL('/api/og', baseUrl);
-  ogUrl.searchParams.set('id', id);
+  ogUrl.searchParams.set('id', targetId);
 
   return {
     title: "AI 闇恋診断",
@@ -48,7 +46,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     openGraph: {
       title: "AI 闇恋診断",
       description: data.comment,
-      images: [ogUrl.toString()], // ★ここが個別の結果画像になる
+      images: [ogUrl.toString()],
     },
     twitter: {
       card: 'summary_large_image',

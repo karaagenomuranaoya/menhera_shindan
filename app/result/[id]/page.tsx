@@ -10,14 +10,37 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// ★ここにも同じ最強IDを定義
+const DEFAULT_ID = 'b3dfe464-a323-47f6-a4b7-ccadbb176a58';
+
+/**
+ * データを取得するヘルパー関数
+ * 指定IDが見つからない場合、自動的にDEFAULT_IDのデータを返します
+ */
+async function getDiagnosisData(id: string) {
+  // 1. 指定されたIDで検索
+  let { data } = await supabase.from('diagnoses').select('*').eq('id', id).single();
+
+  // 2. データがない場合、デフォルトID（最強の回答）を召喚（憑依）
+  if (!data) {
+    const fallback = await supabase.from('diagnoses').select('*').eq('id', DEFAULT_ID).single();
+    data = fallback.data;
+  }
+  
+  return data;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const { data } = await supabase.from('diagnoses').select('*').eq('id', id).single();
+  const data = await getDiagnosisData(id);
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://yamikoi-shindan.vercel.app';
 
-  if (!data) return { title: '診断結果が見つかりません' };
+  // 万が一デフォルトIDすらDBから消えている場合の保険
+  if (!data) return { title: 'AI 闇恋診断' };
 
-  const ogUrl = new URL('/api/og', process.env.NEXT_PUBLIC_APP_URL || 'https://yamikoi-shindan.vercel.app');
-  ogUrl.searchParams.set('id', id);
+  const ogUrl = new URL('/api/og', baseUrl);
+  // 実際に表示するデータのID（フォールバックした場合はDEFAULT_ID）をOGPに渡す
+  ogUrl.searchParams.set('id', data.id);
 
   return {
     title: `AI闇恋診断結果 - ${data.rank_name}`,
@@ -38,14 +61,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ResultPage({ params }: Props) {
   const { id } = await params;
+  const result = await getDiagnosisData(id);
 
-  const { data: result, error } = await supabase
-    .from('diagnoses')
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (error || !result) {
+  // デフォルトIDすら取得できない致命的な状況のみエラー表示
+  if (!result) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#f8f5ff]">
         <p className="text-purple-400 font-bold mb-4">結果が見つかりませんでした。</p>
@@ -92,7 +111,7 @@ export default async function ResultPage({ params }: Props) {
           )}
         </div>
 
-        {/* 詳細情報エリア（ここを復活・拡充しました） */}
+        {/* 詳細情報エリア */}
         <div className="space-y-6 text-left px-2 border-t border-purple-100 pt-6">
           
           {/* スコア */}
@@ -110,7 +129,7 @@ export default async function ResultPage({ params }: Props) {
             </p>
           </div>
 
-          {/* ユーザーの回答（一番面白いところ） */}
+          {/* ユーザーの回答 */}
           <div className="bg-white p-5 rounded-3xl border-2 border-pink-100 shadow-sm relative overflow-hidden">
             <div className="absolute top-0 right-0 bg-pink-100 text-pink-500 text-[9px] font-black px-3 py-1 rounded-bl-xl tracking-tighter">ANSWER</div>
             <p className="text-base text-purple-900 font-bold leading-relaxed pt-2">
