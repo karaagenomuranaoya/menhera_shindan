@@ -17,7 +17,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const { id } = await searchParams;
 
   // ベースのURL（環境変数かlocalhost）
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://yamikoi-shindan.vercel.app/';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://yamikoi-shindan.vercel.app';
 
   // デフォルトのメタデータ（IDがない場合）
   const defaultMetadata = {
