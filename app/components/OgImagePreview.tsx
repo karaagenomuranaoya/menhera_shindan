@@ -22,7 +22,7 @@ export default function OgImagePreview({ id }: Props) {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `menhera-diagnosis-${id}.png`;
+      a.download = `yamikoi-diagnosis-${id}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -36,7 +36,7 @@ export default function OgImagePreview({ id }: Props) {
     <div className="w-full max-w-lg mx-auto mt-6 mb-8 space-y-4">
       <div className="text-center space-y-1">
         <h3 className="text-sm font-bold text-purple-400 tracking-widest">
-          Menhera Karte
+          Yamikoi Karte
         </h3>
         <p className="text-[10px] text-purple-300">
           左の方を長押しすると写真に保存できるの。

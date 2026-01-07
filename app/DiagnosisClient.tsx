@@ -25,7 +25,7 @@ type DiagnosisResult = {
   comment: string;
 };
 
-const STORAGE_KEY = "menhera_diagnosis_draft"; 
+const STORAGE_KEY = "yamikoi_diagnosis_draft"; 
 
 export default function DiagnosisClient() {
   const [step, setStep] = useState(0);
