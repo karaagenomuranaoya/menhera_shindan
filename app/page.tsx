@@ -21,11 +21,11 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
   // デフォルトのメタデータ（IDがない場合）
   const defaultMetadata = {
-    title: "AI メンヘラ診断",
-    description: "あなたの愛の重さをメンヘラのお友達AIが診断します。",
+    title: "AI 闇恋診断",
+    description: "あなたの愛の重さを闇恋系のお友達AIが診断します。",
     openGraph: {
-      title: "AI メンヘラ診断",
-      description: "あなたの愛の重さをメンヘラのお友達AIが診断します。",
+      title: "AI 闇恋診断",
+      description: "あなたの愛の重さを闇恋系のお友達AIが診断します。",
       images: [`${baseUrl}/og-default.png`], // デフォルト画像（publicに置く）
     },
   };
@@ -43,16 +43,16 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   ogUrl.searchParams.set('id', id);
 
   return {
-    title: "AI メンヘラ診断",
+    title: "AI 闇恋診断",
     description: `診断結果：${data.rank_name} (Score: ${data.score})`,
     openGraph: {
-      title: "AI メンヘラ診断",
+      title: "AI 闇恋診断",
       description: data.comment,
       images: [ogUrl.toString()], // ★ここが個別の結果画像になる
     },
     twitter: {
       card: 'summary_large_image',
-      title: "AI メンヘラ診断",
+      title: "AI 闇恋診断",
       description: data.comment,
       images: [ogUrl.toString()],
     },

@@ -85,11 +85,11 @@ export default function DiagnosisClient() {
     setShowHint(true);
   };
 
-  const hintPrompt = `あなたはメンヘラ気味の女の子です。
-以下のお題に対して、指定されたメンヘラ度の強さで、100文字程度で答えを考えてください。
+  const hintPrompt = `あなたは闇恋系の女の子です。
+以下のお題に対して、指定された闇恋度の強さで、100文字程度で答えを考えてください。
 
 お題：${selectedQuestion}
-メンヘラ度：${randomLevel}%
+闇恋度：${randomLevel}%
 
 では，お願いします。`;
 
@@ -139,7 +139,7 @@ export default function DiagnosisClient() {
 
   const shareOnX = () => {
     if (!result) return;
-    const text = `AIメンヘラ診断：結果は【${result.grade}ランク】でした\n#AIメンヘラ診断\n`;
+    const text = `AI闇恋診断：結果は【${result.grade}ランク】でした\n#AI闇恋診断\n`;
     const shareUrl = `${window.location.origin}/result/${result.id}`;
     const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
     window.open(xUrl, "_blank");
@@ -147,7 +147,7 @@ export default function DiagnosisClient() {
 
   const shareOnLine = () => {
     if (!result) return;
-    const text = `AIメンヘラ診断：結果は【${result.grade}ランク】でした`;
+    const text = `AI闇恋診断：結果は【${result.grade}ランク】でした`;
     const shareUrl = `${window.location.origin}/result/${result.id}`;
     const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
     window.open(lineUrl, "_blank");
@@ -189,8 +189,8 @@ export default function DiagnosisClient() {
             onClick={() => setStep(0)}
             className={`text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-purple-500 to-pink-400 inline-block ${step > 0 ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}
           >
-            AIメンヘラ診断<br/>
-            <span className="text-xs font-bold text-purple-300 tracking-normal">AI Menhera Check</span>
+            AI闇恋診断<br/>
+            <span className="text-xs font-bold text-purple-300 tracking-normal">AI Yamikoi Check</span>
           </h1>
         </div>
         {/* ▲▲▲ 修正ここまで ▲▲▲ */}
@@ -204,7 +204,7 @@ export default function DiagnosisClient() {
                 className="w-full h-auto object-cover"
               />
             </div>
-            <p className="text-purple-400/80 text-sm leading-relaxed font-medium">あなたの愛の重さを<br/>メンヘラのお友達AIが診断します。</p>
+            <p className="text-purple-400/80 text-sm leading-relaxed font-medium">あなたの愛の重さを<br/>闇恋系のお友達AIが診断します。</p>
             <button 
               onClick={() => setStep(1)} 
               className="w-full py-4 bg-gradient-to-r from-purple-400 to-pink-300 text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-purple-200"

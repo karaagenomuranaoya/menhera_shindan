@@ -139,7 +139,7 @@ export async function GET(req: NextRequest) {
               </div>
 
               <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center' }}>
-                <div style={{ fontSize: '20px', fontWeight: '900', color: '#f472b6' }}>AI メンヘラ診断</div>
+                <div style={{ fontSize: '20px', fontWeight: '900', color: '#f472b6' }}>AI 闇恋診断</div>
                 <div style={{ marginLeft: '10px', fontSize: '12px', color: '#a78bfa' }}>menhera-check.vercel.app</div>
               </div>
             </div>

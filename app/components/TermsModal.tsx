@@ -44,7 +44,7 @@ export default function TermsModal({ isOpen, onClose }: Props) {
             {/* 本文エリア */}
             <div className="p-6 overflow-y-auto text-sm text-purple-900/80 space-y-4 leading-relaxed scrollbar-thin scrollbar-thumb-purple-200 scrollbar-track-transparent">
               <p>
-                「AIメンヘラ診断」（以下、当サービス）を利用するにあたり、以下の内容に同意したものとみなします。
+                「AI闇恋診断」（以下、当サービス）を利用するにあたり、以下の内容に同意したものとみなします。
               </p>
 
               <div className="space-y-2">
@@ -52,7 +52,7 @@ export default function TermsModal({ isOpen, onClose }: Props) {
                   1. データの将来的な利用について
                 </h4>
                 <p className="text-xs">
-                  あなたが入力した回答データは、将来的に開発されるかもしれない<span className="font-bold text-pink-500">「最強のメンヘラ女子AI」</span>などの学習データとして活用させていただく場合があります。あなたの愛の重さが、AIの人格を形成する礎となります。
+                  あなたが入力した回答データは、将来的に開発されるかもしれない<span className="font-bold text-pink-500">「最強の闇恋女子AI」</span>などの学習データとして活用させていただく場合があります。あなたの愛の重さが、AIの人格を形成する礎となります。
                 </p>
               </div>
 
