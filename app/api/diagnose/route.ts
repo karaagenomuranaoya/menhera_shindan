@@ -45,7 +45,7 @@ const gradeOrder: Record<string, number> = {
 
 // レートリミッター
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || "http://localhost:3000",
+  url: process.env.UPSTASH_REDIS_REST_URL || "https://yamikoi-shindan.vercel.app",
   token: process.env.UPSTASH_REDIS_REST_TOKEN || "dummy",
 });
 
