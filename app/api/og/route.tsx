@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
-    // ★追加: Google FontsからNoto Sans JPを読み込む
+    // Noto Sans JP Boldを読み込む
     const fontData = await fetch(
       new URL('https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/Japanese/NotoSansCJKjp-Bold.otf', import.meta.url)
     ).then((res) => res.arrayBuffer());
@@ -40,25 +40,26 @@ export async function GET(req: NextRequest) {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: '#f8f5ff',
+            backgroundColor: '#050000', // 黒背景
             padding: '40px',
-            fontFamily: 'sans-serif',
+            fontFamily: 'NotoSansJP',
+            backgroundImage: 'radial-gradient(circle at 50% 50%, #1a0000 0%, #000000 100%)',
           }}
         >
           {/* 背景の装飾 */}
-          <div style={{ position: 'absolute', top: -50, right: -50, width: 300, height: 300, borderRadius: '50%', background: 'rgba(244, 114, 182, 0.15)', filter: 'blur(60px)' }} />
-          <div style={{ position: 'absolute', bottom: -50, left: -50, width: 300, height: 300, borderRadius: '50%', background: 'rgba(168, 85, 247, 0.15)', filter: 'blur(60px)' }} />
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '10px', background: '#8b0000' }} />
+          <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '10px', background: '#8b0000' }} />
 
           <div
             style={{
               display: 'flex',
               width: '100%',
               height: '100%',
-              backgroundColor: 'rgba(255, 255, 255, 0.8)',
-              borderRadius: '40px',
-              border: '2px solid #f3e8ff',
+              backgroundColor: 'rgba(20, 0, 0, 0.9)',
+              borderRadius: '10px',
+              border: '4px solid #3f0000',
               padding: '40px',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.05)',
+              boxShadow: '0 0 60px rgba(255,0,0,0.1)',
               overflow: 'hidden',
               flexDirection: 'row',
             }}
@@ -66,17 +67,17 @@ export async function GET(req: NextRequest) {
             {/* 左側：ランク・画像・スコア */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '40%', justifyContent: 'center' }}>
               
-              {/* RESULTラベル */}
-              <div style={{ fontSize: '20px', fontWeight: '900', color: '#d8b4fe', marginBottom: '0px', letterSpacing: '0.2em' }}>RESULT</div>
+              {/* JUDGMENTラベル */}
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#ff0000', marginBottom: '0px', letterSpacing: '0.2em' }}>JUDGMENT</div>
 
-              {/* Grade（派手に追加） */}
+              {/* Grade（元のコードのサイズ感に戻し、色は赤へ） */}
               <div style={{ 
                 fontSize: '70px', 
                 fontWeight: '900', 
-                color: '#f472b6', // ピンク色
+                color: '#ff0000', 
                 fontStyle: 'italic', 
                 marginBottom: '10px',
-                textShadow: '0 4px 10px rgba(244, 114, 182, 0.4)', // 光るような影
+                textShadow: '4px 4px 0px #3f0000',
                 lineHeight: 1,
                 display: 'flex'
               }}>
@@ -88,29 +89,29 @@ export async function GET(req: NextRequest) {
                 src={image_url}
                 alt={grade}
                 style={{
-                  width: '280px',
-                  height: '280px',
-                  borderRadius: '30px',
-                  border: '4px solid white',
-                  boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+                  width: '250px',
+                  height: '250px',
+                  borderRadius: '4px',
+                  border: '4px solid #500000',
                   objectFit: 'cover',
                   marginBottom: '15px',
+                  filter: 'grayscale(80%) contrast(1.2)',
                 }}
               />
 
               {/* ランク名 */}
-              <div style={{ fontSize: '24px', fontWeight: '900', color: '#6b21a8', textAlign: 'center', marginBottom: '5px' }}>
+              <div style={{ fontSize: '24px', fontWeight: '900', color: '#ffffff', textAlign: 'center', marginBottom: '5px' }}>
                 {rank_name}
               </div>
 
-              {/* Score（派手に変更） */}
+              {/* Score */}
               <div style={{ 
                 fontSize: '40px', 
                 fontWeight: '900', 
-                color: '#ec4899', // 濃いピンク
+                color: '#8b0000', 
                 fontStyle: 'italic',
-                textShadow: '0 2px 5px rgba(236, 72, 153, 0.3)',
-                display: 'flex'
+                display: 'flex',
+                textShadow: '0 2px 5px rgba(0,0,0,0.5)',
               }}>
                 Score : {score}
               </div>
@@ -120,27 +121,27 @@ export async function GET(req: NextRequest) {
             <div style={{ display: 'flex', flexDirection: 'column', width: '60%', paddingLeft: '40px', justifyContent: 'center' }}>
               
               <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '15px' }}>
-                <div style={{ fontSize: '10px', fontWeight: '900', color: '#d8b4fe', marginBottom: '3px' }}>QUESTION</div>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#6b21a8' }}>{question}</div>
+                <div style={{ fontSize: '10px', fontWeight: '900', color: '#ff0000', marginBottom: '3px', letterSpacing: '0.1em' }}>TRIAL (お題)</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#cccccc' }}>{question}</div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '20px' }}>
-                <div style={{ fontSize: '12px', fontWeight: '900', color: '#f472b6', marginBottom: '5px' }}>YOUR ANSWER</div>
-                <div style={{ fontSize: '18px', fontWeight: '700', color: '#1e1b4b', backgroundColor: 'white', padding: '15px', borderRadius: '20px', border: '1px solid #fae8ff' }}>
+                <div style={{ fontSize: '12px', fontWeight: '900', color: '#ff0000', marginBottom: '5px', letterSpacing: '0.1em' }}>CONFESSION (回答)</div>
+                <div style={{ fontSize: '18px', fontWeight: '700', color: '#ffffff', backgroundColor: '#200000', padding: '15px', borderRadius: '4px', borderLeft: '6px solid #ff0000' }}>
                   {answer}
                 </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <div style={{ fontSize: '12px', fontWeight: '900', color: '#d8b4fe', marginBottom: '5px' }}>AI REVIEW</div>
-                <div style={{ fontSize: '16px', color: '#581c87', lineHeight: '1.6', fontWeight: '500' }}>
-                  {comment}
+                <div style={{ fontSize: '12px', fontWeight: '900', color: '#ff0000', marginBottom: '5px', letterSpacing: '0.1em' }}>VERDICT (審判)</div>
+                <div style={{ fontSize: '16px', color: '#aaaaaa', lineHeight: '1.6', fontWeight: '500' }}>
+                  {comment.length > 85 ? comment.substring(0, 85) + '...' : comment}
                 </div>
               </div>
 
-              <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center' }}>
-                <div style={{ fontSize: '20px', fontWeight: '900', color: '#f472b6' }}>AI 闇恋診断</div>
-                <div style={{ marginLeft: '10px', fontSize: '12px', color: '#a78bfa' }}>yamikoi-shindan.vercel.app</div>
+              <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', borderTop: '1px solid #330000', paddingTop: '15px' }}>
+                <div style={{ fontSize: '20px', fontWeight: '900', color: '#ffffff' }}>AI 狂愛コロシアム</div>
+                <div style={{ marginLeft: '10px', fontSize: '12px', color: '#666666' }}>yamikoi-shindan.vercel.app</div>
               </div>
             </div>
           </div>
@@ -148,7 +149,6 @@ export async function GET(req: NextRequest) {
       ),
       { width: 1200,
         height: 630, 
-        // ★追加: フォント設定
         fonts: [
           {
             name: 'NotoSansJP',

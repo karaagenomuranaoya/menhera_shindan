@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
+import { Skull, Flame } from 'lucide-react';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -10,23 +11,14 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// ★ここにも同じ最強IDを定義
 const DEFAULT_ID = 'b3dfe464-a323-47f6-a4b7-ccadbb176a58';
 
-/**
- * データを取得するヘルパー関数
- * 指定IDが見つからない場合、自動的にDEFAULT_IDのデータを返します
- */
 async function getDiagnosisData(id: string) {
-  // 1. 指定されたIDで検索
   let { data } = await supabase.from('diagnoses').select('*').eq('id', id).single();
-
-  // 2. データがない場合、デフォルトID（最強の回答）を召喚（憑依）
   if (!data) {
     const fallback = await supabase.from('diagnoses').select('*').eq('id', DEFAULT_ID).single();
     data = fallback.data;
   }
-  
   return data;
 }
 
@@ -35,24 +27,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await getDiagnosisData(id);
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://yamikoi-shindan.vercel.app';
 
-  // 万が一デフォルトIDすらDBから消えている場合の保険
-  if (!data) return { title: 'AI 闇恋診断' };
+  if (!data) return { title: 'AI狂愛コロシアム' };
 
   const ogUrl = new URL('/api/og', baseUrl);
-  // 実際に表示するデータのID（フォールバックした場合はDEFAULT_ID）をOGPに渡す
   ogUrl.searchParams.set('id', data.id);
 
   return {
-    title: `AI闇恋診断結果 - ${data.rank_name}`,
+    title: `審判結果：${data.rank_name} - AI狂愛コロシアム`,
     description: data.comment,
     openGraph: {
-      title: 'AI闇恋診断',
+      title: 'AI狂愛コロシアム',
       description: data.comment,
       images: [ogUrl.toString()],
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'AI闇恋診断',
+      title: 'AI狂愛コロシアム',
       description: data.comment,
       images: [ogUrl.toString()],
     },
@@ -63,96 +53,92 @@ export default async function ResultPage({ params }: Props) {
   const { id } = await params;
   const result = await getDiagnosisData(id);
 
-  // デフォルトIDすら取得できない致命的な状況のみエラー表示
   if (!result) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#f8f5ff]">
-        <p className="text-purple-400 font-bold mb-4">結果が見つかりませんでした。</p>
-        <Link href="/" className="text-purple-500 underline">トップへ戻る</Link>
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-black text-red-600">
+        <p className="font-bold mb-4 tracking-widest">DATA LOST IN VOID.</p>
+        <Link href="/" className="text-red-500 underline decoration-red-900">RETURN</Link>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#f8f5ff] text-purple-900 flex flex-col items-center justify-center p-4 font-sans">
-      <div className="w-full max-w-md bg-white/70 p-6 rounded-[2.5rem] border border-purple-100 shadow-2xl shadow-purple-200/50 backdrop-blur-xl space-y-8 text-center relative overflow-hidden">
+    <main className="min-h-screen bg-black text-red-600 flex flex-col items-center justify-center p-4 font-sans relative">
+      <div className="fixed inset-0 pointer-events-none z-0 opacity-20 bg-[url('/noise.png')] mix-blend-overlay"></div>
+
+      <div className="w-full max-w-md bg-black/90 p-6 rounded-sm border border-red-900/50 shadow-[0_0_50px_rgba(139,0,0,0.3)] backdrop-blur-md space-y-8 text-center relative overflow-hidden z-10">
         
-        {/* 閲覧専用バッジ */}
-        <div className="absolute top-0 right-0 bg-purple-200 text-purple-600 text-[10px] font-bold px-3 py-1 rounded-bl-xl z-10">
-          SHARED VIEW
+        <div className="absolute top-0 right-0 bg-red-900 text-black text-[10px] font-bold px-3 py-1 z-10 tracking-widest">
+          PUBLIC RECORD
         </div>
 
-        <h1 className="text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-purple-500 to-pink-400 mt-4">
-          AI闇恋診断結果
+        <h1 className="text-xl font-black tracking-[0.3em] text-red-700 mt-4 border-b border-red-900 pb-2 inline-block">
+          JUDGMENT
         </h1>
 
-        {/* ランク・画像表示エリア */}
         <div className="space-y-4">
-          <div className="text-[clamp(2rem,12vw,3.75rem)] font-black text-pink-400 drop-shadow-[0_4px_10px_rgba(244,114,182,0.3)] italic whitespace-nowrap leading-none">
-            Rank : {result.grade}
+          <div className="text-[clamp(3rem,12vw,4.5rem)] font-black text-red-600 drop-shadow-[0_0_10px_rgba(255,0,0,0.8)] italic whitespace-nowrap leading-none">
+            {result.grade}
           </div>
           
-          <div className="relative w-64 h-64 mx-auto">
-            <div className="absolute inset-0 bg-gradient-to-tr from-pink-300 to-purple-300 rounded-[2.5rem] blur-3xl opacity-40"></div>
+          <div className="relative w-64 h-64 mx-auto group">
+            <div className="absolute inset-0 bg-red-900 blur-2xl opacity-30 animate-pulse"></div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src={result.image_url} 
               alt={result.grade}
-              className="relative w-full h-full object-cover rounded-[2rem] border-4 border-white shadow-xl pointer-events-none select-none"
+              className="relative w-full h-full object-cover border-2 border-red-900 grayscale contrast-125"
             />
           </div>
 
-          <div className="text-xl font-black text-purple-800 pt-4">
+          <div className="text-lg font-bold text-red-500 pt-4 tracking-widest">
             {result.rank_name}
           </div>
           {result.warning && (
-            <div className="inline-block bg-pink-50 text-pink-400 px-5 py-1.5 rounded-full border border-pink-100 text-xs font-bold">
-              {result.warning}
+            <div className="inline-block bg-black text-red-400 px-4 py-1 border border-red-800 text-xs font-mono">
+              ⚠ {result.warning}
             </div>
           )}
         </div>
 
-        {/* 詳細情報エリア */}
-        <div className="space-y-6 text-left px-2 border-t border-purple-100 pt-6">
-          
-          {/* スコア */}
+        <div className="space-y-6 text-left px-2 border-t border-red-900/30 pt-6">
           <div className="text-center mb-4">
-            <div className="text-[clamp(1.8rem,10vw,3.75rem)] font-black text-pink-400 drop-shadow-[0_4px_10px_rgba(244,114,182,0.3)] italic whitespace-nowrap leading-none">
-              Score : {result.score}
+            <div className="text-sm text-red-900 font-mono tracking-widest mb-1">SCORE</div>
+            <div className="text-4xl font-black text-red-500 italic font-mono">
+              {result.score}
             </div>
           </div>
 
-          {/* 質問 */}
-          <div className="space-y-1">
-            <span className="text-[10px] font-black text-purple-300 uppercase tracking-widest">Question</span>
-            <p className="text-xs text-purple-800 font-medium leading-relaxed">
-              {result.question || "（お題データなし）"}
+          <div className="space-y-2">
+            <span className="text-[10px] font-black text-red-800 uppercase tracking-widest block">Question</span>
+            <p className="text-xs text-red-300 font-medium leading-relaxed border-l-2 border-red-900 pl-3">
+              {result.question || "UNKNOWN"}
             </p>
           </div>
 
-          {/* ユーザーの回答 */}
-          <div className="bg-white p-5 rounded-3xl border-2 border-pink-100 shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-pink-100 text-pink-500 text-[9px] font-black px-3 py-1 rounded-bl-xl tracking-tighter">ANSWER</div>
-            <p className="text-base text-purple-900 font-bold leading-relaxed pt-2">
+          <div className="bg-red-950/10 p-5 border border-red-900/30 relative overflow-hidden">
+            <div className="absolute top-0 right-0 bg-red-900 text-black text-[9px] font-black px-2 py-1 tracking-tighter">ANSWER</div>
+            <p className="text-base text-red-100 font-bold leading-relaxed pt-2 font-serif italic opacity-90">
               {result.answer}
             </p>
           </div>
 
-          {/* AIレビュー */}
-          <div className="space-y-1">
-            <span className="text-[10px] font-black text-pink-300 uppercase tracking-widest">Review</span>
-            <p className="text-sm text-purple-800/80 font-medium leading-relaxed">
+          <div className="space-y-2">
+            <span className="text-[10px] font-black text-red-500 uppercase tracking-widest block">Review</span>
+            <p className="text-sm text-red-200/80 font-medium leading-relaxed font-serif">
               {result.comment}
             </p>
           </div>
         </div>
 
-        {/* 誘導ボタン */}
         <div className="pt-4 space-y-3">
-          <p className="text-xs text-center text-purple-400 font-bold">
-            あなたもどう？
+          <p className="text-xs text-center text-red-800 font-bold tracking-widest">
+            ARE YOU NEXT?
           </p>
-          <Link href="/" className="block w-full py-4 bg-gradient-to-r from-purple-500 to-pink-400 text-white rounded-2xl font-black hover:opacity-90 transition-all shadow-lg text-center animate-pulse">
-            自分も診断する
+          <Link href="/" className="group block w-full py-4 bg-red-950 text-red-500 border border-red-800 rounded-sm font-black hover:bg-red-900 hover:text-black hover:border-red-500 transition-all text-center uppercase tracking-widest flex items-center justify-center gap-2">
+            <Skull size={18} className="group-hover:animate-bounce" />
+            ENTER THE ARENA
+            <Skull size={18} className="group-hover:animate-bounce" />
           </Link>
         </div>
       </div>
