@@ -1,12 +1,12 @@
 import { Metadata } from 'next';
 import DiagnosisClient from './DiagnosisClient';
 import { createClient } from '@supabase/supabase-js';
+import { getDailyRanking } from './lib/ranking'; // 追加
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// ★ここに指定の最強IDを定義（ここを書き換えるだけで憑依先が変わります）
 const DEFAULT_ID = 'b3dfe464-a323-47f6-a4b7-ccadbb176a58';
 
 type Props = {
@@ -16,14 +16,11 @@ type Props = {
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const { id } = await searchParams;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://yamikoi-shindan.vercel.app';
-
-  // IDが指定されていればそれを、なければ最強IDを使用
   const targetId = (typeof id === 'string' ? id : DEFAULT_ID);
-
-  // DBからデータ取得
+  
+  // try-catch等でエラーハンドリングしても良いですが、ここではシンプルに
   const { data } = await supabase.from('diagnoses').select('*').eq('id', targetId).single();
 
-  // 万が一デフォルトIDすらDBにない場合の保険（汎用画像へ）
   if (!data) {
     return {
       title: "AI 闇恋診断",
@@ -36,13 +33,12 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     };
   }
 
-  // OGP画像のURLを生成
   const ogUrl = new URL('/api/og', baseUrl);
   ogUrl.searchParams.set('id', targetId);
 
   return {
     title: "AI 闇恋診断",
-    description: `診断結果：${data.rank_name} (Score: ${data.score})`,
+    description: `診断結果：${data.title || data.rank_name} (Score: ${data.score})`,
     openGraph: {
       title: "AI 闇恋診断",
       description: data.comment,
@@ -57,6 +53,10 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   };
 }
 
-export default function Home() {
-  return <DiagnosisClient />;
+export default async function Home() {
+  // ここでランキングデータを取得（ISR/キャッシュが効く）
+  const rankings = await getDailyRanking();
+
+  // Client Componentにデータを渡す
+  return <DiagnosisClient initialRankings={rankings} />;
 }

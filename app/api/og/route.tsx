@@ -116,7 +116,7 @@ export async function GET(req: NextRequest) {
                   wordBreak: 'break-all',
                   display: 'flex',
                 }}>
-                  「{displayText}」
+                  {displayText}
                 </div>
               </div>
 

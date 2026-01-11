@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { Skull, Flame, Quote, Trophy, FileText } from 'lucide-react';
+import { getDailyRanking } from '../../lib/ranking';
+import RankingList from '../../components/RankingList';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -55,6 +57,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ResultPage({ params }: Props) {
   const { id } = await params;
   const result = await getDiagnosisData(id);
+
+  // ランキングデータを取得
+  const rankings = await getDailyRanking();
 
   if (!result) {
     return (
@@ -145,6 +150,8 @@ export default async function ResultPage({ params }: Props) {
           </div>
         </div>
 
+        
+
         {/* アクション */}
         <div className="pt-4 space-y-3">
           <p className="text-xs text-center text-red-800 font-bold tracking-widest">
@@ -156,6 +163,20 @@ export default async function ResultPage({ params }: Props) {
             <Skull size={18} className="group-hover:animate-bounce" />
           </Link>
         </div>
+      </div>
+      <div className="w-full max-w-md relative z-10 space-y-6 pb-20">
+        <div className="flex items-center justify-between border-b border-red-900/50 pb-2">
+          <h2 className="text-sm font-black text-red-500 tracking-widest flex items-center gap-2">
+            <span className="w-2 h-2 bg-red-600 animate-pulse"></span>
+            DAILY TOP 5
+          </h2>
+          <Link href="/ranking" className="text-[10px] text-red-800 hover:text-red-500 underline decoration-dotted">
+            すべて見る
+          </Link>
+        </div>
+        
+        {/* 上位5件だけ表示 */}
+        <RankingList rankings={rankings} limit={5} />
       </div>
     </main>
   );

@@ -1,10 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link"; 
+import RankingList from './components/RankingList';
+// 型定義のみインポート（動作コードはインポートしない）
+import type { RankingItem } from './lib/ranking'; 
 import { motion } from "framer-motion";
-import { Trash2, Link as LinkIcon, Check, Skull, Dices, ChevronLeft, Flame, Trophy, Quote, FileText } from "lucide-react"; 
+import { Trash2, Link as LinkIcon, Check, Skull, Dices, ChevronLeft, Flame, Trophy, Quote, FileText, Crown } from "lucide-react"; 
 import OgImagePreview from "./components/OgImagePreview";
 import TermsModal from "./components/TermsModal";
-import { getGachaResult } from "./data/gacha-presets"; 
+import { getGachaResult } from "./data/gacha-presets";
 
 type DiagnosisResult = {
   id: string;
@@ -18,7 +22,13 @@ type DiagnosisResult = {
 
 const STORAGE_KEY = "yamikoi_diagnosis_draft"; 
 
-export default function DiagnosisClient() {
+// Propsの型定義を追加
+type Props = {
+  initialRankings: RankingItem[];
+};
+
+// propsを受け取るように変更
+export default function DiagnosisClient({ initialRankings }: Props) {
   const [step, setStep] = useState(1);
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState<DiagnosisResult | null>(null);
@@ -115,10 +125,11 @@ export default function DiagnosisClient() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-red-600 flex flex-col items-center justify-center p-4 font-sans overflow-hidden relative">
+    <main className="min-h-screen bg-black text-red-600 flex flex-col items-center justify-start p-4 font-sans overflow-x-hidden relative pb-20">
       <div className="fixed inset-0 pointer-events-none z-0 opacity-20 bg-[url('/noise.png')] mix-blend-overlay"></div>
       
-      <div className="w-full max-w-md bg-black/80 p-6 rounded-sm border border-red-900/50 shadow-[0_0_50px_rgba(255,0,0,0.2)] backdrop-blur-md relative z-10">
+      {/* 診断カード */}
+      <div className="w-full max-w-md bg-black/80 p-6 rounded-sm border border-red-900/50 shadow-[0_0_50px_rgba(255,0,0,0.2)] backdrop-blur-md relative z-10 mt-8 mb-8">
         
         <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-red-600"></div>
         <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-red-600"></div>
@@ -213,21 +224,10 @@ export default function DiagnosisClient() {
               className="w-full py-4 bg-red-900/80 text-black border border-red-600 font-black hover:bg-red-600 hover:text-white transition-all shadow-[0_0_15px_rgba(255,0,0,0.3)] hover:shadow-[0_0_30px_rgba(255,0,0,0.6)] disabled:opacity-30 disabled:shadow-none tracking-widest text-lg"
               disabled={!answer}
             >
-              JUDGMENT
+              アイを叫ぶ
             </button>
           </motion.div>
         )}
-
-        <div className="mt-8 pt-4 border-t border-red-900/30 text-center">
-          <button
-            onClick={() => setShowTerms(true)}
-            className="text-[10px] text-red-900 hover:text-red-600 underline decoration-dotted underline-offset-2 transition-colors"
-          >
-            利用規約
-          </button>
-        </div>
-
-        <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
 
         {step === 2 && (
           <div className="text-center py-20">
@@ -243,12 +243,10 @@ export default function DiagnosisClient() {
 
         {step === 3 && result && (
           <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="space-y-8 text-center">
-            
             {/* 上部：グレード画像と称号 */}
             <div className="space-y-4 relative">
               <div className="text-[10px] text-red-800 tracking-[0.5em] font-black border-b border-red-900 inline-block px-4 pb-1">RESULT</div>
               
-              {/* 元のスタイルに戻しました: 画像の上にGradeを表示 */}
               <div className="text-[clamp(3rem,12vw,4.5rem)] font-black text-red-600 drop-shadow-[0_0_15px_rgba(255,0,0,0.6)] italic mt-2 whitespace-nowrap leading-none glitch-hover">
                 Rank:{result.grade}
               </div>
@@ -317,54 +315,61 @@ export default function DiagnosisClient() {
 
             {/* シェア・保存エリア */}
             <div className="border-t border-red-900/30 pt-6 space-y-6">
-              
               <OgImagePreview id={result.id} />
-
               <div className="space-y-3">
-                <p className="text-[10px] text-red-800 mb-2 font-mono">
-                  よかったら広めてね。
-                </p>
-
-                <button
-                  onClick={shareOnX}
-                  className="w-full py-4 bg-black text-white border border-white/20 rounded-sm font-black hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                  </svg>
+                <p className="text-[10px] text-red-800 mb-2 font-mono">よかったら広めてね。</p>
+                <button onClick={shareOnX} className="w-full py-4 bg-black text-white border border-white/20 rounded-sm font-black hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
                   Xで共有
                 </button>
-                
                 <div className="flex gap-2">
-                  <button
-                    onClick={shareOnLine}
-                    className="flex-[2] py-4 bg-[#06C755] text-white rounded-sm font-black hover:opacity-80 transition-all flex items-center justify-center gap-2"
-                  >
-                    <span className="text-lg font-bold">LINE</span>
-                    で共有
+                  <button onClick={shareOnLine} className="flex-[2] py-4 bg-[#06C755] text-white rounded-sm font-black hover:opacity-80 transition-all flex items-center justify-center gap-2">
+                    <span className="text-lg font-bold">LINE</span>で共有
                   </button>
-                  
-                  <button
-                    onClick={copyLink}
-                    className="flex-1 py-4 bg-black border border-red-900 text-red-500 rounded-sm font-bold hover:bg-red-900/20 transition-all flex items-center justify-center gap-1 active:scale-95"
-                  >
+                  <button onClick={copyLink} className="flex-1 py-4 bg-black border border-red-900 text-red-500 rounded-sm font-bold hover:bg-red-900/20 transition-all flex items-center justify-center gap-1 active:scale-95">
                     {copied ? <Check size={20} /> : <LinkIcon size={20} />}
                   </button>
                 </div>
               </div>
             </div>
 
-            <button 
-              onClick={handleRestart}
-              className="text-xs text-red-900 font-bold hover:text-red-500 transition-colors pt-8 pb-4 tracking-widest flex items-center justify-center gap-2 mx-auto group"
-            >
+            <button onClick={handleRestart} className="text-xs text-red-900 font-bold hover:text-red-500 transition-colors pt-8 pb-4 tracking-widest flex items-center justify-center gap-2 mx-auto group">
               <Flame size={12} className="group-hover:text-red-500 transition-colors" />
               リトライ
               <Flame size={12} className="group-hover:text-red-500 transition-colors" />
             </button>
           </motion.div>
         )}
+
+        <div className="mt-8 pt-4 border-t border-red-900/30 text-center">
+          <button
+            onClick={() => setShowTerms(true)}
+            className="text-[10px] text-red-900 hover:text-red-600 underline decoration-dotted underline-offset-2 transition-colors"
+          >
+            利用規約
+          </button>
+        </div>
       </div>
+
+      <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
+
+      {/* --- ランキングエリア（ステップ2以外で表示） --- */}
+      {step !== 2 && (
+        <div className="w-full max-w-md relative z-10 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+          <div className="flex items-center justify-between border-b border-red-900/50 pb-2 px-2">
+            <h2 className="text-sm font-black text-red-500 tracking-widest flex items-center gap-2">
+              <Crown size={16} className="text-red-600" />
+              DAILY TOP 5
+            </h2>
+            <Link href="/ranking" className="text-[10px] text-red-800 hover:text-red-500 underline decoration-dotted">
+              すべて見る
+            </Link>
+          </div>
+          
+          <RankingList rankings={initialRankings} limit={5} />
+        </div>
+      )}
+
     </main>
   );
 }
