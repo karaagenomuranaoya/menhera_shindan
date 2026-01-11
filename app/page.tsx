@@ -23,11 +23,11 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
   if (!data) {
     return {
-      title: "AI 闇恋診断",
-      description: "あなたの愛の重さを闇恋系のお友達AIが診断します。",
+      title: "AI狂愛コロシアム",
+      description: "あなたの愛と狂気をAIちゃんがベタ褒めします。",
       openGraph: {
-        title: "AI 闇恋診断",
-        description: "あなたの愛の重さを闇恋系のお友達AIが診断します。",
+        title: "AI狂愛コロシアム",
+        description: "あなたの愛と狂気をAIちゃんがベタ褒めします。",
         images: [`${baseUrl}/og-default.png`],
       },
     };
@@ -37,16 +37,16 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   ogUrl.searchParams.set('id', targetId);
 
   return {
-    title: "AI 闇恋診断",
-    description: `診断結果：${data.title || data.rank_name} (Score: ${data.score})`,
+    title: "AI狂愛コロシアム",
+    description: `結果：${data.title || data.rank_name} (Score: ${data.score})`,
     openGraph: {
-      title: "AI 闇恋診断",
+      title: "AI狂愛コロシアム",
       description: data.comment,
       images: [ogUrl.toString()],
     },
     twitter: {
       card: 'summary_large_image',
-      title: "AI 闇恋診断",
+      title: "AI狂愛コロシアム",
       description: data.comment,
       images: [ogUrl.toString()],
     },
