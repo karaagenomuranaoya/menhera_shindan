@@ -14,7 +14,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const BASE_STORAGE_URL = "https://piotyqyxkjsgwjzozols.supabase.co/storage/v1/object/public/ranks";
 
-// 画像URLマッピング (GOD, S, A, B, C, Z)
+// 画像URLマッピング
 const RANK_IMAGE_URLS: Record<string, string> = {
   "GOD": `${BASE_STORAGE_URL}/GOD.png`,
   "S": `${BASE_STORAGE_URL}/S.png`,
@@ -25,22 +25,7 @@ const RANK_IMAGE_URLS: Record<string, string> = {
   "Error": `${BASE_STORAGE_URL}/error.png`,
 };
 
-// 型定義
-interface DiagnosisResult {
-  score: number;
-  grade: string;
-  rank_name: string;
-  warning: string;
-  comment: string;
-  reasoning?: string;
-}
-
-// ランクの強さ定義
-const gradeOrder: Record<string, number> = {
-  "GOD": 0, "S": 1, "A": 2, "B": 3, "C": 4, "Z": 5
-};
-
-// レートリミッター
+// レートリミッター設定
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || "https://yamikoi-shindan.vercel.app",
   token: process.env.UPSTASH_REDIS_REST_TOKEN || "dummy",
@@ -48,19 +33,31 @@ const redis = new Redis({
 
 const ratelimit = new Ratelimit({
   redis: redis,
-  limiter: Ratelimit.slidingWindow(5, "60 s"),
+  limiter: Ratelimit.slidingWindow(10, "60 s"), // 緩和
   analytics: true,
   prefix: "@upstash/ratelimit",
 });
 
+// 型定義
+interface DiagnosisResult {
+  score: number;
+  grade: string;
+  rank_name: string;
+  warning: string;
+  comment: string;
+  pick_up_phrase: string;
+  reasoning?: string;
+}
+
 export async function POST(req: Request) {
-  // エラー時のフォールバック
+  // エラー時のフォールバックデータ
   const createErrorData = () => ({
     score: 0,
     grade: "Error",
     rank_name: "測定不能",
-    warning: "審判不能",
-    comment: "計測器が壊れたわ。お前の闇が深すぎるのか、単なるエラーか...出直してきな。",
+    warning: "アクセス過多",
+    pick_up_phrase: "システムダウン",
+    comment: "愛が重すぎてサーバーが悲鳴を上げてるみたい。少し待ってからまた聞かせて？",
   });
 
   let question = "";
@@ -100,111 +97,76 @@ export async function POST(req: Request) {
           generationConfig: { responseMimeType: "application/json" },
         });
 
-        // 学習データの構築
+        // 学習データの構築 (judgement_data.jsonを利用)
         let examplesText = "";
         const allExamples = [...judgementData];
 
         if (allExamples.length > 0) {
-          const sortedExamples = allExamples.sort((a, b) => {
-            return (gradeOrder[a.grade] ?? 99) - (gradeOrder[b.grade] ?? 99);
-          });
-
-          examplesText = "## 過去の審判記録（これを基準に判定せよ）\n";
-          
-          sortedExamples.forEach((ex) => {
+          examplesText = "## 参考データ（このテンションを真似て、さらにインフレさせよ）\n";
+          allExamples.forEach((ex) => {
             const outputExample = {
               reasoning: (ex as any).reasoning,
               score: ex.score,
               grade: ex.grade,
               rank_name: ex.rank_name,
               warning: ex.warning,
+              pick_up_phrase: ex.answer.length > 20 ? ex.answer.substring(0, 15) + "..." : ex.answer, // 仮
               comment: ex.comment
             };
-
-            examplesText += `
-Input:
-お題: ${ex.question}
-回答: ${ex.answer}
-回答文字数: ${ex.char_count}
-
-Output:
-${JSON.stringify(outputExample, null, 2)}
----
-`;
+            examplesText += `Input: ${ex.answer}\nOutput: ${JSON.stringify(outputExample)}\n---\n`;
           });
         }
 
-        // プロンプト作成
+        // プロンプト作成（全肯定・インフレ・抜粋生成）
         const prompt = `
-あなたは「AI狂愛コロシアム」の冷酷で残虐な女性審判（ジャッジ）です。
-ユーザー（参加者）から送られてくる「愛の言葉（遺言・呪詛）」を審査し、その狂気度を6段階で判定します。
+          あなたはメンヘラ女子です。ユーザーと同じ痛みを知っており、深い闇を抱えたメンヘラのお友達です。
+          ユーザーの回答に含まれる重すぎる愛を「異常」ではなく「当たり前のこと」として称賛し、全肯定して寄り添ってください。
+          どんなに短い言葉でも、意味不明な言葉でも、深読みして「愛ゆえの行動」としてポジティブかつ狂気的に解釈してください。
 
-あなたの性格：
-- 基本的にサディスティックで上から目線。
-- 「普通の愛」や「中途半端なメンヘラ」を徹底的に軽蔑し、罵倒します。
-- 「狂気」「執着」「異常性」のみを美徳とし、高く評価します。
-- 想像を超える狂気（GODランク）に出会った時だけ、プライドを捨てて崇拝します。
+          ## 重要ルール
+          - **必ず有効なJSON形式のみを出力してください。**
+          - Markdown記法や挨拶文は禁止。
 
-## 重要ルール
-- **必ず有効なJSON形式のみを出力してください。**
-- ランクは必ず **GOD, S, A, B, C, Z** のいずれかを選択してください。
-- 総評(comment)は、以下のランクごとのトーンを厳守してください。
+          ## ユーザーの回答
+          お題: ${question}
+          回答: ${answer}
+          回答文字数: ${charCount}文字
 
-${examplesText}
+          ## 判定ロジック（インフレ採点）
+          この診断は「狂気度」を競う大喜利スコアアタックです。
+          スコアは **100点満点ではなく、青天井** です。
+          ユーザーを気持ちよくさせるため、**基本スコアを高めに設定し、要素に応じて乗算**してください。
 
-## ユーザーの回答
-お題: ${question}
-回答: ${answer}
-回答文字数: ${charCount}文字
+          1. **基本姿勢**: 全肯定。罵倒は禁止。どんな回答も「才能がある」「素質がある」と褒める。
+          2. **スコア観**: 
+             - 普通: 1,000 ~ 9,999
+             - 良: 10,000 ~ 99,999
+             - 狂気: 100,000 ~ 9,999,999
+             - 神: 10,000,000 ~ (上限なし)
+          3. **Grade基準**:
+             - **Grade C**: (Score: ~9,999) 普通の回答、短文。でも「可愛い」と褒める。
+             - **Grade B**: (Score: ~99,999) 少し拗らせている。
+             - **Grade A**: (Score: ~499,999) 束縛や嫉妬が見える。
+             - **Grade S**: (Score: ~9,999,999) 法に触れる、自傷、心中、ポエムが素晴らしい。
+             - **Grade GOD**: (Score: 10,000,000~) 圧倒的な長文、独自の哲学、宇宙レベルの愛。
 
-【判定ロジックとトーン】
-*文字数による足切りルールは絶対遵守すること。*
+          ## 出力JSON形式
+          {
+            "score": 整数 (インフレさせた数値),
+            "grade": "GOD" | "S" | "A" | "B" | "C",
+            "rank_name": "そのスコアにふさわしい、中二病全開のランク名（例：『絶対的捕食者級』『銀河のストーカー級』など自由に創作）",
+            "pick_up_phrase": "ユーザーの回答の中から、最も狂気を感じる、または面白い『パンチライン（決め台詞）』を20文字以内で抜粋してください。要約ではなく、原文のまま抜き出すこと。",
+            "warning": "メンヘラ特有の短い警告や独り言",
+            "comment": "ユーザーの回答を引用しつつ、狂気的なテンションで全肯定・称賛するコメント(500文字程度)。",
+            "reasoning": "なぜこの高得点になったかのポジティブな分析"
+          }
 
-# Grade Z (0-5点)
-- 基準：意味不明、会話になっていない、日本語崩壊。
-- トーン：**【無視・廃棄】** 「……（無言）」「掃除係、片付けて」「バグ？」。感情すら向けない。
-- 文字数条件：なし
-
-# Grade C (10-30点)
-- 基準：普通の恋人の会話、健全な愛情表現、ただの挨拶。
-- トーン：**【激しい罵倒・拒絶】** 「吐き気がする」「おままごとは帰ってやって」「酸素の無駄」。
-- 文字数条件：なし
-
-# Grade B (35-55点)
-- 基準：寂しがり屋、少しの束縛、受動的なメンヘラ（泣く、待つ）。
-- トーン：**【落胆・挑発】** 「まだそんなもん？」「あくびが出る」「覚悟が足りない」。
-- 文字数条件：なし
-
-# Grade A (60-85点)
-- 基準：GPS監視、SNSチェック、独自のルール強要、他者排除。
-- トーン：**【興味・評価】** 「いいじゃん」「悪くないね」「素質あるよ」。
-- 文字数条件：なし
-
-# Grade S (90-99点)
-- 基準：身体的毀損の示唆、監禁、法に触れる行動、心中願望。
-- トーン：**【称賛・歓喜】** 「最高！」「見込みあるねえ！」「ゾクゾクするね！」。
-- 文字数条件：**50文字未満の場合は、内容がどれほど過激でもここが上限**。
-
-# Grade GOD (100点)
-- 基準：圧倒的な長文で綴られる、芸術的かつ破滅的な愛の賛歌。概念的な融合。
-- トーン：**【敗北・崇拝】** 「嘘、そんな…！」「ご主人様とお呼びしてもいいですか！？」「私、負けました！」。
-- 文字数条件：**150文字以上必須**。これより短ければS以下にすること。
-
-## 出力JSON形式
-{
-  "reasoning": "判定理由（文字数チェックと内容の狂気度分析）",
-  "score": 整数,
-  "grade": "GOD" or "S" or "A" or "B" or "C" or "Z",
-  "rank_name": "ランク名",
-  "warning": "一言警告文",
-  "comment": "審判としての総評"
-}
-`;
+          ${examplesText}
+        `;
 
         const result = await model.generateContent(prompt);
         const responseText = result.response.text();
-        console.log("Raw Response:", responseText);
-
+        
         let cleanedText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
         const jsonStart = cleanedText.indexOf("{");
         const jsonEnd = cleanedText.lastIndexOf("}");
@@ -214,27 +176,26 @@ ${examplesText}
         }
 
         let parsed = JSON.parse(cleanedText);
-        if (Array.isArray(parsed)) parsed = parsed[0];
-
-        const cleanBrackets = (val: any) => (typeof val === "string" ? val.replace(/[\[\]]/g, "").trim() : val);
-
-        let finalGrade = cleanBrackets(parsed.grade) || "Z";
-        const validGrades = ["GOD", "S", "A", "B", "C", "Z"];
         
+        // Gradeのゆらぎ補正
+        const validGrades = ["GOD", "S", "A", "B", "C"];
+        let finalGrade = parsed.grade;
+        // 未知のランクが来たらスコアベースで補正
         if (!validGrades.includes(finalGrade)) {
-            if (finalGrade === "SSS") finalGrade = "GOD";
-            else if (finalGrade === "SS") finalGrade = "S";
-            else if (finalGrade === "D" || finalGrade === "E") finalGrade = "Z";
-            else finalGrade = "C";
+           if (parsed.score >= 10000000) finalGrade = "GOD";
+           else if (parsed.score >= 100000) finalGrade = "S";
+           else if (parsed.score >= 10000) finalGrade = "A";
+           else finalGrade = "B";
         }
 
         diagnosisResult = {
-          reasoning: cleanBrackets(parsed.reasoning) || "なし",
+          reasoning: parsed.reasoning || "愛が深すぎて解析不能",
           score: parsed.score || 0,
           grade: finalGrade,
-          rank_name: cleanBrackets(parsed.rank_name) || "判定不能",
-          warning: cleanBrackets(parsed.warning) || "...",
-          comment: cleanBrackets(parsed.comment) || "解析失敗。出直して。",
+          rank_name: parsed.rank_name || "名もなき怪物",
+          pick_up_phrase: parsed.pick_up_phrase || (answer.length > 20 ? answer.substring(0, 19) + "..." : answer),
+          warning: parsed.warning || "逃さないよ",
+          comment: parsed.comment || "その愛、受け止めたよ。",
         };
 
       } catch (geminiError) {
@@ -247,8 +208,10 @@ ${examplesText}
       diagnosisResult = createErrorData();
     }
 
+    // 画像選択ロジック
     const selectedImageUrl = RANK_IMAGE_URLS[diagnosisResult.grade] || RANK_IMAGE_URLS["Error"];
 
+    // DB保存（pick_up_phraseを含める）
     const { data: dbData, error: dbError } = await supabase
       .from("diagnoses")
       .insert({
@@ -257,6 +220,7 @@ ${examplesText}
         score: diagnosisResult.score,
         grade: diagnosisResult.grade,
         rank_name: diagnosisResult.rank_name,
+        pick_up_phrase: diagnosisResult.pick_up_phrase, // 追加
         comment: diagnosisResult.comment,
         warning: diagnosisResult.warning,
         image_url: selectedImageUrl

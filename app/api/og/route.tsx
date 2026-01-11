@@ -2,6 +2,7 @@ import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+// 1. 設定は元のまま (Edge Runtime)
 export const runtime = 'edge';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
-    // Noto Sans JP Boldを読み込む
+    // 2. 【重要】フォント読み込みを「元の動いていたコード」に完全に戻しました
     const fontData = await fetch(
       new URL('https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/Japanese/NotoSansCJKjp-Bold.otf', import.meta.url)
     ).then((res) => res.arrayBuffer());
@@ -28,7 +29,14 @@ export async function GET(req: NextRequest) {
 
     if (error || !data) return new Response('Result not found', { status: 404 });
 
-    const { grade, score, rank_name, answer, comment, question, image_url } = data;
+    // 3. 必要なデータを取得（pick_up_phraseを追加）
+    const { grade, score, rank_name, answer, image_url, pick_up_phrase } = data;
+
+    // 4. ロジック追加: キラーフレーズがない場合は回答の先頭を使う
+    const displayText = pick_up_phrase || (answer.length > 20 ? answer.substring(0, 19) + "..." : answer);
+    
+    // 5. ロジック追加: スコアをカンマ区切りにする (例: 100,000,000)
+    const formattedScore = new Intl.NumberFormat('en-US').format(score);
 
     return new ImageResponse(
       (
@@ -40,13 +48,13 @@ export async function GET(req: NextRequest) {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: '#050000', // 黒背景
+            backgroundColor: '#050000',
             padding: '40px',
             fontFamily: 'NotoSansJP',
             backgroundImage: 'radial-gradient(circle at 50% 50%, #1a0000 0%, #000000 100%)',
           }}
         >
-          {/* 背景の装飾 */}
+          {/* 背景装飾（元のまま） */}
           <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '10px', background: '#8b0000' }} />
           <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '10px', background: '#8b0000' }} />
 
@@ -64,85 +72,76 @@ export async function GET(req: NextRequest) {
               flexDirection: 'row',
             }}
           >
-            {/* 左側：ランク・画像・スコア */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '40%', justifyContent: 'center' }}>
+            {/* 左側：ランク・画像（スコアはここから削除） */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '35%', justifyContent: 'center', borderRight: '2px solid #500000', paddingRight: '20px' }}>
               
-              {/* JUDGMENTラベル */}
-              <div style={{ fontSize: '20px', fontWeight: '900', color: '#ff0000', marginBottom: '0px', letterSpacing: '0.2em' }}>JUDGMENT</div>
-
-              {/* Grade（元のコードのサイズ感に戻し、色は赤へ） */}
-              <div style={{ 
-                fontSize: '70px', 
-                fontWeight: '900', 
-                color: '#ff0000', 
-                fontStyle: 'italic', 
-                marginBottom: '10px',
-                textShadow: '4px 4px 0px #3f0000',
-                lineHeight: 1,
-                display: 'flex'
-              }}>
-                Rank : {grade}
+              <div style={{ fontSize: '70px', fontWeight: '900', color: '#ff0000', fontStyle: 'italic', marginBottom: '15px', textShadow: '4px 4px 0px #3f0000', lineHeight: 1 }}>
+                {grade}
               </div>
 
-              {/* 画像 */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={image_url}
                 alt={grade}
                 style={{
-                  width: '250px',
-                  height: '250px',
-                  borderRadius: '4px',
+                  width: '240px',
+                  height: '240px',
+                  borderRadius: '10px',
                   border: '4px solid #500000',
                   objectFit: 'cover',
-                  marginBottom: '15px',
-                  filter: 'grayscale(80%) contrast(1.2)',
+                  marginBottom: '20px',
+                  filter: 'grayscale(50%) contrast(1.2)',
                 }}
               />
 
-              {/* ランク名 */}
-              <div style={{ fontSize: '24px', fontWeight: '900', color: '#ffffff', textAlign: 'center', marginBottom: '5px' }}>
+              <div style={{ fontSize: '24px', fontWeight: '900', color: '#ffffff', textAlign: 'center' }}>
                 {rank_name}
-              </div>
-
-              {/* Score */}
-              <div style={{ 
-                fontSize: '40px', 
-                fontWeight: '900', 
-                color: '#8b0000', 
-                fontStyle: 'italic',
-                display: 'flex',
-                textShadow: '0 2px 5px rgba(0,0,0,0.5)',
-              }}>
-                Score : {score}
               </div>
             </div>
 
-            {/* 右側：質問・回答・コメント */}
-            <div style={{ display: 'flex', flexDirection: 'column', width: '60%', paddingLeft: '40px', justifyContent: 'center' }}>
+            {/* 右側：【ここを大幅変更】キラーフレーズとスコア */}
+            <div style={{ display: 'flex', flexDirection: 'column', width: '65%', paddingLeft: '40px', justifyContent: 'space-between' }}>
               
-              <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '15px' }}>
-                <div style={{ fontSize: '10px', fontWeight: '900', color: '#ff0000', marginBottom: '3px', letterSpacing: '0.1em' }}>TRIAL (お題)</div>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#cccccc' }}>{question}</div>
+              {/* ヘッダー */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '2px solid #500000', paddingBottom: '10px' }}>
+                <div style={{ fontSize: '24px', color: '#8b0000', fontWeight: '900', letterSpacing: '0.1em' }}>AI 狂愛コロシアム</div>
+                <div style={{ fontSize: '16px', color: '#666' }}>yamikoi-shindan.vercel.app</div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '20px' }}>
-                <div style={{ fontSize: '12px', fontWeight: '900', color: '#ff0000', marginBottom: '5px', letterSpacing: '0.1em' }}>CONFESSION (回答)</div>
-                <div style={{ fontSize: '18px', fontWeight: '700', color: '#ffffff', backgroundColor: '#200000', padding: '15px', borderRadius: '4px', borderLeft: '6px solid #ff0000' }}>
-                  {answer}
+              {/* メイン：キラーフレーズ (PICK UP MADNESS) */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+                <div style={{ fontSize: '14px', color: '#ff0000', marginBottom: '15px', fontWeight: '900', letterSpacing: '0.2em' }}>PICK UP MADNESS</div>
+                <div style={{ 
+                  fontSize: '42px', 
+                  fontWeight: '900', 
+                  color: '#ffffff', 
+                  textAlign: 'center', 
+                  lineHeight: '1.4',
+                  textShadow: '0 0 20px rgba(255,255,255,0.2)',
+                  // 長文対策
+                  wordBreak: 'break-all',
+                  display: 'flex',
+                }}>
+                  「{displayText}」
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <div style={{ fontSize: '12px', fontWeight: '900', color: '#ff0000', marginBottom: '5px', letterSpacing: '0.1em' }}>VERDICT (審判)</div>
-                <div style={{ fontSize: '16px', color: '#aaaaaa', lineHeight: '1.6', fontWeight: '500' }}>
-                  {comment.length > 85 ? comment.substring(0, 85) + '...' : comment}
+              {/* フッター：TOTAL SCORE */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                <div style={{ fontSize: '16px', color: '#8b0000', marginBottom: '0px', letterSpacing: '0.2em', fontWeight: '900' }}>TOTAL SCORE</div>
+                <div style={{ 
+                  fontSize: '90px', 
+                  fontWeight: '900', 
+                  color: '#ff0000', 
+                  lineHeight: 1,
+                  fontStyle: 'italic',
+                  textShadow: '5px 5px 0px #300000',
+                  letterSpacing: '-3px'
+                }}>
+                  {formattedScore}
                 </div>
               </div>
 
-              <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', borderTop: '1px solid #330000', paddingTop: '15px' }}>
-                <div style={{ fontSize: '20px', fontWeight: '900', color: '#ffffff' }}>AI 狂愛コロシアム</div>
-                <div style={{ marginLeft: '10px', fontSize: '12px', color: '#666666' }}>yamikoi-shindan.vercel.app</div>
-              </div>
             </div>
           </div>
         </div>
