@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
-import { Skull, Flame } from 'lucide-react';
+import { Skull, Flame, Quote, Trophy, FileText } from 'lucide-react';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -15,6 +15,7 @@ const DEFAULT_ID = 'b3dfe464-a323-47f6-a4b7-ccadbb176a58';
 
 async function getDiagnosisData(id: string) {
   let { data } = await supabase.from('diagnoses').select('*').eq('id', id).single();
+  
   if (!data) {
     const fallback = await supabase.from('diagnoses').select('*').eq('id', DEFAULT_ID).single();
     data = fallback.data;
@@ -32,17 +33,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const ogUrl = new URL('/api/og', baseUrl);
   ogUrl.searchParams.set('id', data.id);
 
+  const pageTitle = `称号: ${data.title || data.rank_name} (Score: ${data.score.toLocaleString()}) - AI狂愛コロシアム`;
+
   return {
-    title: `審判結果：${data.rank_name} - AI狂愛コロシアム`,
+    title: pageTitle,
     description: data.comment,
     openGraph: {
-      title: 'AI狂愛コロシアム',
+      title: pageTitle,
       description: data.comment,
       images: [ogUrl.toString()],
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'AI狂愛コロシアム',
+      title: pageTitle,
       description: data.comment,
       images: [ogUrl.toString()],
     },
@@ -62,6 +65,9 @@ export default async function ResultPage({ params }: Props) {
     );
   }
 
+  const title = result.title || result.rank_name;
+  const pickUpPhrase = result.pick_up_phrase || result.answer;
+
   return (
     <main className="min-h-screen bg-black text-red-600 flex flex-col items-center justify-center p-4 font-sans relative">
       <div className="fixed inset-0 pointer-events-none z-0 opacity-20 bg-[url('/noise.png')] mix-blend-overlay"></div>
@@ -76,6 +82,7 @@ export default async function ResultPage({ params }: Props) {
           JUDGMENT
         </h1>
 
+        {/* ランクと画像 - 元の配置に戻し */}
         <div className="space-y-4">
           <div className="text-[clamp(3rem,12vw,4.5rem)] font-black text-red-600 drop-shadow-[0_0_10px_rgba(255,0,0,0.8)] italic whitespace-nowrap leading-none">
             {result.grade}
@@ -91,39 +98,46 @@ export default async function ResultPage({ params }: Props) {
             />
           </div>
 
-          <div className="text-lg font-bold text-red-500 pt-4 tracking-widest">
-            {result.rank_name}
-          </div>
-          {result.warning && (
-            <div className="inline-block bg-black text-red-400 px-4 py-1 border border-red-800 text-xs font-mono">
-              ⚠ {result.warning}
+          <div className="mt-4">
+            <span className="text-[10px] text-red-500 block mb-1">TITLE</span>
+            <div className="text-2xl font-black text-white tracking-wider leading-tight text-shadow-blood">
+              {title}
             </div>
-          )}
+          </div>
         </div>
 
+        {/* 詳細データ */}
         <div className="space-y-6 text-left px-2 border-t border-red-900/30 pt-6">
-          <div className="text-center mb-4">
-            <div className="text-sm text-red-900 font-mono tracking-widest mb-1">SCORE</div>
-            <div className="text-4xl font-black text-red-500 italic font-mono">
-              {result.score}
+          <div className="text-center mb-6">
+            <div className="text-xs text-red-900 font-mono tracking-widest mb-1 flex items-center justify-center gap-1">
+              <Trophy size={12} /> TOTAL SCORE
+            </div>
+            <div className="text-[3rem] font-black text-red-500 italic font-mono leading-none tracking-tighter">
+              {result.score.toLocaleString()}
             </div>
           </div>
 
-          <div className="space-y-2">
-            <span className="text-[10px] font-black text-red-800 uppercase tracking-widest block">Question</span>
-            <p className="text-xs text-red-300 font-medium leading-relaxed border-l-2 border-red-900 pl-3">
-              {result.question || "UNKNOWN"}
+          {/* キラーフレーズ */}
+          <div className="bg-red-950/10 p-6 border border-red-900/30 relative overflow-hidden text-center">
+            <Quote size={20} className="absolute top-2 left-2 text-red-900/30 rotate-180" />
+            <div className="absolute top-0 right-0 bg-red-900 text-black text-[9px] font-black px-2 py-1 tracking-tighter">PICK UP</div>
+            <p className="text-lg text-red-100 font-black leading-snug font-serif italic opacity-90">
+              {pickUpPhrase}
             </p>
+            <Quote size={20} className="absolute bottom-2 right-2 text-red-900/30" />
           </div>
 
-          <div className="bg-red-950/10 p-5 border border-red-900/30 relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-red-900 text-black text-[9px] font-black px-2 py-1 tracking-tighter">ANSWER</div>
-            <p className="text-base text-red-100 font-bold leading-relaxed pt-2 font-serif italic opacity-90">
+          {/* 全文表示 */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-[10px] font-black text-red-800 uppercase tracking-widest">
+              <FileText size={10} /> Your LOVE
+            </div>
+            <div className="bg-black/50 p-4 border border-red-900/30 text-xs text-red-300/60 font-mono leading-relaxed break-words whitespace-pre-wrap shadow-inner">
               {result.answer}
-            </p>
+            </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 mt-4">
             <span className="text-[10px] font-black text-red-500 uppercase tracking-widest block">Review</span>
             <p className="text-sm text-red-200/80 font-medium leading-relaxed font-serif">
               {result.comment}
@@ -131,13 +145,14 @@ export default async function ResultPage({ params }: Props) {
           </div>
         </div>
 
+        {/* アクション */}
         <div className="pt-4 space-y-3">
           <p className="text-xs text-center text-red-800 font-bold tracking-widest">
-            ARE YOU NEXT?
+            あなたもどう？
           </p>
           <Link href="/" className="group block w-full py-4 bg-red-950 text-red-500 border border-red-800 rounded-sm font-black hover:bg-red-900 hover:text-black hover:border-red-500 transition-all text-center uppercase tracking-widest flex items-center justify-center gap-2">
             <Skull size={18} className="group-hover:animate-bounce" />
-            ENTER THE ARENA
+            CHALLENGE NOW
             <Skull size={18} className="group-hover:animate-bounce" />
           </Link>
         </div>
