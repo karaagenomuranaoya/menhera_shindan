@@ -323,11 +323,8 @@ export default function DiagnosisClient({ initialRankings }: Props) {
                   Xで共有
                 </button>
                 <div className="flex gap-2">
-                  <button onClick={shareOnLine} className="flex-[2] py-4 bg-[#06C755] text-white rounded-sm font-black hover:opacity-80 transition-all flex items-center justify-center gap-2">
-                    <span className="text-lg font-bold">LINE</span>で共有
-                  </button>
                   <button onClick={copyLink} className="flex-1 py-4 bg-black border border-red-900 text-red-500 rounded-sm font-bold hover:bg-red-900/20 transition-all flex items-center justify-center gap-1 active:scale-95">
-                    <span className="text-lg font-bold">リンク</span>{copied ? <Check size={20} /> : <LinkIcon size={20} />}
+                    <span className="text-lg font-bold">リンクをコピー</span>{copied ? <Check size={20} /> : <LinkIcon size={20} />}
                   </button>
                 </div>
               </div>
