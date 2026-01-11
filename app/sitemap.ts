@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   // 本番のURL（最後にスラッシュなし）
-  const baseUrl = 'https://yamikoi-shindan.vercel.app' 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://madlove-coliseum.vercel.app'
 
   return [
     {

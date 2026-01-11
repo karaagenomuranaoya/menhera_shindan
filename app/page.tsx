@@ -15,7 +15,7 @@ type Props = {
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const { id } = await searchParams;
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://yamikoi-shindan.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://madlove-coliseum.vercel.app';
   const targetId = (typeof id === 'string' ? id : DEFAULT_ID);
   
   // try-catch等でエラーハンドリングしても良いですが、ここではシンプルに

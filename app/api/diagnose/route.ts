@@ -27,7 +27,7 @@ const RANK_IMAGE_URLS: Record<string, string> = {
 
 // レートリミッター
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || "https://yamikoi-shindan.vercel.app",
+  url: process.env.UPSTASH_REDIS_REST_URL || "https://madlove-coliseum.vercel.app",
   token: process.env.UPSTASH_REDIS_REST_TOKEN || "dummy",
 });
 

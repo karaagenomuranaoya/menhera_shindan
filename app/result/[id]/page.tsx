@@ -28,7 +28,7 @@ async function getDiagnosisData(id: string) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const data = await getDiagnosisData(id);
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://yamikoi-shindan.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://madlove-coliseum.vercel.app';
 
   if (!data) return { title: 'AI狂愛コロシアム' };
 

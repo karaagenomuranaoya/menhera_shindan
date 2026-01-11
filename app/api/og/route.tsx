@@ -101,7 +101,7 @@ export async function GET(req: NextRequest) {
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '2px solid #500000', paddingBottom: '10px' }}>
                 <div style={{ fontSize: '24px', color: '#8b0000', fontWeight: '900', letterSpacing: '0.1em' }}>AI 狂愛コロシアム</div>
-                <div style={{ fontSize: '16px', color: '#666' }}>yamikoi-shindan.vercel.app</div>
+                <div style={{ fontSize: '16px', color: '#666' }}>madlove-coliseum.vercel.app</div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
