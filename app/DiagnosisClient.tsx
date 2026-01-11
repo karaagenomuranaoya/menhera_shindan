@@ -1,11 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, Link as LinkIcon, Check, Skull, Copy, X, Dices, ChevronLeft, Flame } from "lucide-react"; 
+import { motion } from "framer-motion";
+import { Trash2, Link as LinkIcon, Check, Skull, Dices, ChevronLeft, Flame } from "lucide-react"; 
 import OgImagePreview from "./components/OgImagePreview";
 import TermsModal from "./components/TermsModal";
 import { getGachaResult } from "./data/gacha-presets"; 
 
+// 固定のお題
 const FIXED_QUESTION_TEXT = "うふふ。どんな狂気を聞かせてくれるの？";
 
 type DiagnosisResult = {
@@ -21,7 +22,6 @@ type DiagnosisResult = {
 const STORAGE_KEY = "yamikoi_diagnosis_draft"; 
 
 export default function DiagnosisClient() {
-  // step 0 (スタート画面) を廃止し、1 (入力画面) から開始
   const [step, setStep] = useState(1);
   const [selectedQuestion] = useState(FIXED_QUESTION_TEXT);
   const [answer, setAnswer] = useState("");
@@ -29,9 +29,6 @@ export default function DiagnosisClient() {
   const [copied, setCopied] = useState(false);
   const [showTerms, setShowTerms] = useState(false); 
   const [isLoaded, setIsLoaded] = useState(false);
-  const [showHint, setShowHint] = useState(false);
-  const [promptCopied, setPromptCopied] = useState(false);
-  const [randomLevel, setRandomLevel] = useState(80);
 
   const handleGacha = () => {
     const randomText = getGachaResult();
@@ -57,28 +54,8 @@ export default function DiagnosisClient() {
     }
   }, [answer, isLoaded]);
 
-  const openHint = () => {
-    setRandomLevel(Math.floor(Math.random() * 100) + 120); 
-    setShowHint(true);
-  };
-
-  const hintPrompt = `あなたは狂愛に支配されたヤンデレ女子です。
-以下のお題に対して、指定された狂気度（Love Madness）で、相手を精神的に追い詰める100文字程度の回答を作成してください。
-
-お題：${selectedQuestion}
-狂気度：${randomLevel}%
-
-出力は回答のみ。`;
-
-  const copyPrompt = () => {
-    navigator.clipboard.writeText(hintPrompt).then(() => {
-      setPromptCopied(true);
-      setTimeout(() => setPromptCopied(false), 2000);
-    });
-  };
-
   const clearAnswer = () => {
-    if (confirm("血の盟約（入力データ）を破棄しますか？")) {
+    if (confirm("入力データを消去しますか？")) {
       setAnswer("");
       localStorage.removeItem(STORAGE_KEY);
     }
@@ -137,7 +114,7 @@ export default function DiagnosisClient() {
   };
 
   const handleRestart = () => {
-    setStep(1); // スタート画面ではなく入力画面に戻る
+    setStep(1);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -177,20 +154,20 @@ export default function DiagnosisClient() {
         {step === 1 && (
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-6">
             
-            {/* 審判の画像（常駐） */}
+            {/* 審判の画像 */}
             <div className="flex justify-center -mt-2 mb-4">
               <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-full border-4 border-red-900 shadow-[0_0_40px_rgba(255,0,0,0.3)] overflow-hidden group">
                 <div className="absolute inset-0 bg-red-500 opacity-0 group-hover:opacity-20 transition-opacity z-10 animate-pulse"></div>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
-                  src="/S.png" 
+                  src="/A.png" 
                   alt="Judge" 
                   className="w-full h-full object-cover scale-110 group-hover:scale-125 transition-transform duration-700 contrast-125"
                 />
               </div>
             </div>
 
-            {/* 問題文（ルビ付き） */}
+            {/* 問題文 */}
             <div className="bg-red-950/30 p-5 border-l-4 border-red-700 text-red-100 shadow-inner font-bold font-serif text-center text-lg leading-relaxed relative">
               <div className="absolute -top-3 left-3 bg-black text-red-600 text-[10px] font-black px-2 border border-red-900">THE TRIAL</div>
               うふふ。<br/>
@@ -225,23 +202,13 @@ export default function DiagnosisClient() {
               )}
             </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={handleGacha}
-                className="flex-1 py-3 bg-black border border-red-800 text-red-600 font-bold text-xs hover:bg-red-900/20 hover:border-red-500 transition-all flex items-center justify-center gap-2 group"
-              >
-                <Dices size={16} className="group-hover:rotate-180 transition-transform duration-500" />
-                狂気召喚 (ガチャ)
-              </button>
-              
-              <button 
-                onClick={openHint}
-                className="py-3 px-4 bg-black border border-red-900 text-red-800 font-bold text-xs hover:text-red-500 hover:border-red-500 transition-all flex items-center justify-center"
-                title="AIに憑依させる"
-              >
-                <Skull size={16} />
-              </button>
-            </div>
+            <button
+              onClick={handleGacha}
+              className="w-full py-3 bg-black border border-red-800 text-red-600 font-bold text-xs hover:bg-red-900/20 hover:border-red-500 transition-all flex items-center justify-center gap-2 group shadow-[0_0_10px_rgba(255,0,0,0.1)] hover:shadow-[0_0_20px_rgba(255,0,0,0.3)]"
+            >
+              <Dices size={16} className="group-hover:rotate-180 transition-transform duration-500" />
+              狂気召喚 (ガチャ)
+            </button>
 
             <div className="flex justify-end items-center">
               <span className="text-[10px] text-red-800 font-mono">
@@ -264,62 +231,9 @@ export default function DiagnosisClient() {
             onClick={() => setShowTerms(true)}
             className="text-[10px] text-red-900 hover:text-red-600 underline decoration-dotted underline-offset-2 transition-colors"
           >
-            血の盟約（利用規約）
+            利用規約
           </button>
         </div>
-
-        {/* ... (Modal類は変更なし) ... */}
-        <AnimatePresence>
-          {showHint && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-              onClick={(e) => {
-                if (e.target === e.currentTarget) setShowHint(false);
-              }}
-            >
-              <motion.div
-                initial={{ scale: 0.9, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.9, y: 20 }}
-                className="bg-black w-full max-w-sm p-6 border border-red-600 shadow-[0_0_30px_rgba(255,0,0,0.2)] relative"
-              >
-                <button 
-                  onClick={() => setShowHint(false)}
-                  className="absolute top-4 right-4 text-red-900 hover:text-red-500 p-2"
-                >
-                  <X size={20} />
-                </button>
-
-                <h3 className="text-center text-red-600 font-black mb-4 tracking-widest">
-                  AI POSSESSION
-                </h3>
-                
-                <p className="text-xs text-red-800 mb-4 leading-relaxed font-mono">
-                  思考が停止したか？<br/>
-                  ならば<span className="font-bold text-red-500">ChatGPT</span>や<span className="font-bold text-red-500">Gemini</span>という名の悪魔に、この呪文を唱えさせろ。
-                </p>
-
-                <div className="bg-red-950/20 p-4 border border-red-900/50 text-xs text-red-400 font-mono mb-4 whitespace-pre-wrap relative group">
-                  {hintPrompt}
-                  
-                  <button 
-                    onClick={copyPrompt}
-                    className="absolute top-2 right-2 p-2 bg-black border border-red-900 text-red-800 hover:text-red-500 hover:border-red-500 transition-colors"
-                  >
-                    {promptCopied ? <Check size={14} /> : <Copy size={14} />}
-                  </button>
-                </div>
-
-                <div className="text-center text-[10px] text-red-900 font-bold animate-pulse">
-                  早くしろ。
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
 
@@ -414,7 +328,7 @@ export default function DiagnosisClient() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                   </svg>
-                  Xで罪を告白する
+                  Xで共有
                 </button>
                 
                 <div className="flex gap-2">
@@ -423,7 +337,7 @@ export default function DiagnosisClient() {
                     className="flex-[2] py-4 bg-[#06C755] text-white rounded-sm font-black hover:opacity-80 transition-all flex items-center justify-center gap-2"
                   >
                     <span className="text-lg font-bold">LINE</span>
-                    道連れにする
+                    で共有
                   </button>
                   
                   <button
