@@ -14,16 +14,32 @@ export default function OgImagePreview({ id }: Props) {
   // OGP画像のURL
   const imageUrl = `/api/og?id=${id}`;
 
-  
+  // 画像ダウンロード処理
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `menhera-diagnosis-${id}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("画像の保存に失敗しました...");
+    }
+  };
 
   return (
     <div className="w-full max-w-lg mx-auto mt-6 mb-8 space-y-4">
       <div className="text-center space-y-1">
         <h3 className="text-sm font-bold text-purple-400 tracking-widest">
-          MadLove Karte
+          Menhera Karte
         </h3>
         <p className="text-[10px] text-purple-300">
-          タップして画像を保存
+          左の方を長押しすると写真に保存できるの。
         </p>
       </div>
 
@@ -34,7 +50,7 @@ export default function OgImagePreview({ id }: Props) {
         transition={{ delay: 0.2 }}
         className="relative group perspective-1000"
       >
-        <div className="relative rounded-[20px] overflow-hidden shadow-purple-200 border-4 border-white transform transition-transform duration-500 hover:scale-[1.02]">
+        <div className="relative rounded-[20px] overflow-hidden shadow-2xl shadow-purple-200 border-4 border-white transform transition-transform duration-500 hover:scale-[1.02]">
           {/* 画像本体 */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -56,6 +72,17 @@ export default function OgImagePreview({ id }: Props) {
           <div className="absolute -inset-[100%] bg-gradient-to-r from-transparent via-white/30 to-transparent rotate-45 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
         </div>
       </motion.div>
+
+      {/* アクションボタン（ここをシンプルに一本化） */}
+      <div className="flex justify-center">
+        <button
+          onClick={handleDownload}
+          className="w-full py-3 px-4 bg-white text-purple-600 border border-purple-200 rounded-xl font-bold text-sm shadow-sm hover:bg-purple-50 transition-colors flex items-center justify-center gap-2"
+        >
+          <Download size={16} />
+          画像を保存する
+        </button>
+      </div>
     </div>
   );
 }

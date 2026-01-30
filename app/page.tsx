@@ -1,62 +1,64 @@
 import { Metadata } from 'next';
 import DiagnosisClient from './DiagnosisClient';
 import { createClient } from '@supabase/supabase-js';
-import { getDailyRanking } from './lib/ranking'; // 追加
 
+// Supabaseクライアントの初期化（サーバーサイド用）
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-const DEFAULT_ID = 'b3dfe464-a323-47f6-a4b7-ccadbb176a58';
 
 type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
+// 動的にメタデータを生成
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  // URLの ?id=... を取得
   const { id } = await searchParams;
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://madlove-coliseum.vercel.app';
-  const targetId = (typeof id === 'string' ? id : DEFAULT_ID);
-  
-  // try-catch等でエラーハンドリングしても良いですが、ここではシンプルに
-  const { data } = await supabase.from('diagnoses').select('*').eq('id', targetId).single();
 
-  if (!data) {
-    return {
-      title: "AI狂愛コロシアム",
-      description: "あなたの愛と狂気をAIちゃんがベタ褒めします。",
-      openGraph: {
-        title: "AI狂愛コロシアム",
-        description: "あなたの愛と狂気をAIちゃんがベタ褒めします。",
-        images: [`${baseUrl}/og-default.png`],
-      },
-    };
-  }
+  // ベースのURL（環境変数かlocalhost）
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
+  // デフォルトのメタデータ（IDがない場合）
+  const defaultMetadata = {
+    title: "AI メンヘラ診断",
+    description: "あなたの愛の重さをメンヘラのお友達AIが診断します。",
+    openGraph: {
+      title: "AI メンヘラ診断",
+      description: "あなたの愛の重さをメンヘラのお友達AIが診断します。",
+      images: [`${baseUrl}/og-default.png`], // デフォルト画像（publicに置く）
+    },
+  };
+
+  // IDがないならデフォルトを返す
+  if (!id || typeof id !== 'string') return defaultMetadata;
+
+  // IDがあるならDBから結果を取得して、OGP画像を差し替える
+  const { data } = await supabase.from('diagnoses').select('*').eq('id', id).single();
+
+  if (!data) return defaultMetadata;
+
+  // 動的OGP画像のURLを作成
   const ogUrl = new URL('/api/og', baseUrl);
-  ogUrl.searchParams.set('id', targetId);
+  ogUrl.searchParams.set('id', id);
 
   return {
-    title: "AI狂愛コロシアム",
-    description: `結果：${data.title || data.rank_name} (Score: ${data.score})`,
+    title: "AI メンヘラ診断",
+    description: `診断結果：${data.rank_name} (Score: ${data.score})`,
     openGraph: {
-      title: "AI狂愛コロシアム",
+      title: "AI メンヘラ診断",
       description: data.comment,
-      images: [ogUrl.toString()],
+      images: [ogUrl.toString()], // ★ここが個別の結果画像になる
     },
     twitter: {
       card: 'summary_large_image',
-      title: "AI狂愛コロシアム",
+      title: "AI メンヘラ診断",
       description: data.comment,
       images: [ogUrl.toString()],
     },
   };
 }
 
-export default async function Home() {
-  // ここでランキングデータを取得（ISR/キャッシュが効く）
-  const rankings = await getDailyRanking();
-
-  // Client Componentにデータを渡す
-  return <DiagnosisClient initialRankings={rankings} />;
+export default function Home() {
+  return <DiagnosisClient />;
 }

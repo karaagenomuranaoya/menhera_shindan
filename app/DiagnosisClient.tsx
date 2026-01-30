@@ -1,67 +1,107 @@
 "use client";
 import { useState, useEffect } from "react";
-import Link from "next/link"; 
-import RankingList from './components/RankingList';
-// 型定義のみインポート（動作コードはインポートしない）
-import type { RankingItem } from './lib/ranking'; 
-import { motion } from "framer-motion";
-import { Trash2, Link as LinkIcon, Check, Skull, Dices, ChevronLeft, Flame, Trophy, Quote, FileText, Crown } from "lucide-react"; 
+import { motion, AnimatePresence } from "framer-motion";
+import { Trash2, Link as LinkIcon, Check, HelpCircle, Copy, X } from "lucide-react";
 import OgImagePreview from "./components/OgImagePreview";
 import TermsModal from "./components/TermsModal";
-import { getGachaResult } from "./data/gacha-presets";
+import { ChevronLeft } from "lucide-react"; 
+
+// 質問の候補リスト
+const QUESTION_CANDIDATES = [
+  "彼から5時間返信がない。追いLINEするなら？",
+  "深夜2時。溢れ出した情緒をそのままメッセージにしてぶつけて。",
+  "彼の浮気疑惑。釘を刺す決定的な一言をどうぞ。",
+  "彼が他の女の子の投稿に「いいね」してた。どう詰める？",
+  "「もう疲れた」と言われた時の、彼を逃がさないための一言。"
+];
 
 type DiagnosisResult = {
   id: string;
   score: number;
-  grade: "GOD" | "S" | "A" | "B" | "C" | "Error";
-  title: string;
-  pick_up_phrase: string;
+  grade: "SSS" | "SS" | "S" | "A" | "B" | "C" | "D" | "E";
+  rank_name: string;
+  warning: string;
   image_url: string;
   comment: string;
 };
 
-const STORAGE_KEY = "madlove_diagnosis_draft"; 
+const STORAGE_KEY = "menhera_diagnosis_draft"; 
 
-// Propsの型定義を追加
-type Props = {
-  initialRankings: RankingItem[];
-};
-
-// propsを受け取るように変更
-export default function DiagnosisClient({ initialRankings }: Props) {
-  const [step, setStep] = useState(1);
+export default function DiagnosisClient() {
+  const [step, setStep] = useState(0);
+  const [selectedQuestion, setSelectedQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState<DiagnosisResult | null>(null);
   const [copied, setCopied] = useState(false);
-  const [showTerms, setShowTerms] = useState(false); 
-  const [isLoaded, setIsLoaded] = useState(false);
 
-  const handleGacha = () => {
-    const randomText = getGachaResult();
-    setAnswer(randomText);
-    if (typeof navigator !== "undefined" && navigator.vibrate) {
-      navigator.vibrate([50, 50, 50]); 
+   // タイトルクリック時の挙動
+  const handleTitleClick = () => {
+    if (step > 0) {
+      // 確認ダイアログを出してもいいですが、
+      // 誤操作しても入力内容はlocalStorageに残る仕様にしたので
+      // そのまま戻しちゃってOKです（サクサク感重視）
+      setStep(0);
     }
   };
 
+  //利用規約
+  const [showTerms, setShowTerms] = useState(false); 
+
+  // 安全装置：初期ロード完了フラグ
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // ヒント機能用ステート
+  const [showHint, setShowHint] = useState(false);
+  const [promptCopied, setPromptCopied] = useState(false);
+  const [randomLevel, setRandomLevel] = useState(80);
+
+  // 初回ロード時にローカルストレージから復元
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedAnswer = localStorage.getItem(STORAGE_KEY);
       if (savedAnswer) {
         setAnswer(savedAnswer);
       }
-      setIsLoaded(true);
+      setIsLoaded(true); // 読み込み完了！
     }
   }, []);
 
+  // 読み込み完了後のみ、変更を保存（これで消失を防ぐ）
   useEffect(() => {
     if (isLoaded) {
       localStorage.setItem(STORAGE_KEY, answer);
     }
   }, [answer, isLoaded]);
 
+  useEffect(() => {
+    if (step === 0) {
+      const randomIdx = Math.floor(Math.random() * QUESTION_CANDIDATES.length);
+      setSelectedQuestion(QUESTION_CANDIDATES[randomIdx]);
+    }
+  }, [step]);
+
+  const openHint = () => {
+    setRandomLevel(Math.floor(Math.random() * 100) + 20);
+    setShowHint(true);
+  };
+
+  const hintPrompt = `あなたはメンヘラ気味の女の子です。
+以下のお題に対して、指定されたメンヘラ度の強さで、100文字程度で答えを考えてください。
+
+お題：${selectedQuestion}
+メンヘラ度：${randomLevel}%
+
+では，お願いします。`;
+
+  const copyPrompt = () => {
+    navigator.clipboard.writeText(hintPrompt).then(() => {
+      setPromptCopied(true);
+      setTimeout(() => setPromptCopied(false), 2000);
+    });
+  };
+
   const clearAnswer = () => {
-    if (confirm("入力データを消去しますか？")) {
+    if (confirm("入力内容をすべて消去しますか？")) {
       setAnswer("");
       localStorage.removeItem(STORAGE_KEY);
     }
@@ -74,13 +114,15 @@ export default function DiagnosisClient({ initialRankings }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          question: "固定", 
+          question: selectedQuestion,
           answer: answer 
         }),
       });
 
+      // ▼▼▼ 修正: ステータスに関わらずJSONを取得する ▼▼▼
       const data = await res.json();
 
+      // もし万が一データが壊れていたらエラーにする（通常ここには来ない）
       if (!data || !data.grade) {
         throw new Error("データ形式が不正です");
       }
@@ -89,14 +131,15 @@ export default function DiagnosisClient({ initialRankings }: Props) {
       setStep(3);
     } catch (e: any) {
       console.error("Diagnosis Error:", e);
-      alert("通信エラーが発生しました。\n愛が重すぎてサーバーがダウンした可能性があります。");
+      // 万が一ネットワークエラーなどでfetch自体が失敗した場合のみアラート
+      alert("通信エラーが発生しました。\n時間を置いてもう一度お試しください。");
       setStep(1); 
     }
   };
 
   const shareOnX = () => {
     if (!result) return;
-    const text = `私の狂気称号は【${result.title}】\nスコア: ${result.score.toLocaleString()}点\n#AI狂愛コロシアム\n`;
+    const text = `AIメンヘラ診断：結果は【${result.grade}ランク】でした\n#AIメンヘラ診断\n`;
     const shareUrl = `${window.location.origin}/result/${result.id}`;
     const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
     window.open(xUrl, "_blank");
@@ -104,7 +147,7 @@ export default function DiagnosisClient({ initialRankings }: Props) {
 
   const shareOnLine = () => {
     if (!result) return;
-    const text = `私の狂気称号は【${result.title}】\nスコア: ${result.score.toLocaleString()}点`;
+    const text = `AIメンヘラ診断：結果は【${result.grade}ランク】でした`;
     const shareUrl = `${window.location.origin}/result/${result.id}`;
     const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
     window.open(lineUrl, "_blank");
@@ -119,254 +162,291 @@ export default function DiagnosisClient({ initialRankings }: Props) {
     });
   };
 
+  // 【修正】ここです！勝手に消さないようにしました。
   const handleRestart = () => {
-    setStep(1);
+    setStep(0);
+    // setAnswer("");  ← 削除
+    // localStorage.removeItem(STORAGE_KEY); ← 削除
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
-    <main className="min-h-screen bg-black text-red-600 flex flex-col items-center justify-start p-4 font-sans overflow-x-hidden relative pb-20">
-      <div className="fixed inset-0 pointer-events-none z-0 opacity-20 bg-[url('/noise.png')] mix-blend-overlay"></div>
-      
-      {/* 診断カード */}
-      <div className="w-full max-w-md bg-black/80 p-6 rounded-sm border border-red-900/50 shadow-[0_0_50px_rgba(255,0,0,0.2)] backdrop-blur-md relative z-10 mt-8 mb-8">
+    <main className="min-h-screen bg-[#f8f5ff] text-purple-900 flex flex-col items-center justify-center p-4 font-sans selection:bg-purple-200">
+      <div className="w-full max-w-md bg-white/70 p-6 rounded-[2.5rem] border border-purple-100 shadow-2xl shadow-purple-200/50 backdrop-blur-xl relative">
         
-        <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-red-600"></div>
-        <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-red-600"></div>
-        <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-red-600"></div>
-        <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-red-600"></div>
-
-        <div className="relative mb-6 text-center">
-          {step > 1 && (
+         {/* ▼▼▼ タイトル部分を修正 ▼▼▼ */}
+        <div className="relative mb-8 text-center">
+          {step > 0 && (
             <button
-              onClick={() => setStep(1)}
-              className="absolute left-0 top-1/2 -translate-y-1/2 text-red-800 hover:text-red-500 p-2 transition-colors"
+              onClick={() => setStep(step - 1)} // 1つ前に戻る、あるいは setStep(0) でトップへ
+              className="absolute left-0 top-1/2 -translate-y-1/2 text-purple-300 p-2 hover:bg-purple-50 rounded-full transition-colors"
             >
               <ChevronLeft size={24} />
             </button>
           )}
           
           <h1 
-            onClick={() => setStep(1)}
-            className={`text-2xl font-black tracking-widest text-red-600 glitch-hover inline-block cursor-pointer`}
-            style={{ textShadow: '0 0 10px rgba(255,0,0,0.5)' }}
+            onClick={() => setStep(0)}
+            className={`text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-purple-500 to-pink-400 inline-block ${step > 0 ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}
           >
-            AI狂愛<span className="text-white">×</span>コロシアム
+            AIメンヘラ診断<br/>
+            <span className="text-xs font-bold text-purple-300 tracking-normal">AI Menhera Check</span>
           </h1>
-          <p className="text-[9px] font-mono text-red-900 tracking-[0.5em] mt-1">MADNESS LOVE COLISEUM</p>
         </div>
+        {/* ▲▲▲ 修正ここまで ▲▲▲ */}
+
+        {step === 0 && (
+          <div className="text-center space-y-6">
+            <div className="w-full overflow-hidden rounded-2xl shadow-md border-2 border-white/50">
+              <img 
+                src="/banner.png" 
+                alt="Main Banner" 
+                className="w-full h-auto object-cover"
+              />
+            </div>
+            <p className="text-purple-400/80 text-sm leading-relaxed font-medium">あなたの愛の重さを<br/>メンヘラのお友達AIが診断します。</p>
+            <button 
+              onClick={() => setStep(1)} 
+              className="w-full py-4 bg-gradient-to-r from-purple-400 to-pink-300 text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-purple-200"
+            >
+              入室する
+            </button>
+          </div>
+        )}
 
         {step === 1 && (
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-6">
-            
-            <div className="flex justify-center -mt-2 mb-4">
-              <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-full border-4 border-red-900 shadow-[0_0_40px_rgba(255,0,0,0.3)] overflow-hidden group">
-                <div className="absolute inset-0 bg-red-500 opacity-0 group-hover:opacity-20 transition-opacity z-10 animate-pulse"></div>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src="/A.png" 
-                  alt="Judge" 
-                  className="w-full h-full object-cover scale-110 group-hover:scale-125 transition-transform duration-700 contrast-125"
-                />
-              </div>
-            </div>
-
-            <div className="bg-red-950/30 p-5 border-l-4 border-red-700 text-red-100 shadow-inner font-bold font-serif text-center text-lg leading-relaxed relative">
-              <div className="absolute -top-3 left-3 bg-black text-red-600 text-[10px] font-black px-2 border border-red-900">THEME</div>
-              うふふ。<br/>
-              どんな
-              <span className="inline-block mx-1 relative group cursor-help">
-                <ruby className="ruby-position-over">
-                  狂気
-                  <rt className="text-[10px] text-red-500 font-sans tracking-tighter">アイ</rt>
-                </ruby>
-              </span>
-              を<br/>
-              聞かせてくれるの？
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+            <div className="text-[10px] text-purple-400 font-black mb-1 tracking-tighter">QUESTION FOR YOU</div>
+            <div className="bg-purple-50/80 p-5 rounded-3xl rounded-tl-none text-sm border border-purple-100 text-purple-800 shadow-inner">
+              {selectedQuestion}
             </div>
             
-            <div className="relative group">
+            <div className="relative">
               <textarea
-                className="w-full bg-black border border-red-900/50 rounded-sm p-4 text-red-100 focus:outline-none focus:border-red-500 focus:bg-red-950/10 min-h-[150px] transition-all placeholder-red-900/50 text-sm shadow-inner pr-10 font-mono"
-                placeholder="ここに遺言（回答）を刻め... 長文ほどAIが歓喜するかも？"
+                className="w-full bg-white/50 border border-purple-100 rounded-2xl p-4 text-purple-900 focus:outline-none focus:border-purple-300 min-h-[120px] transition-colors placeholder-purple-200 text-sm shadow-sm pr-10"
+                placeholder="メッセージを入力..."
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
               />
-              <div className="absolute inset-0 border border-red-600 opacity-0 group-hover:opacity-20 pointer-events-none transition-opacity duration-500 animate-pulse"></div>
               
               {answer && (
                 <button
                   onClick={clearAnswer}
-                  className="absolute top-3 right-3 text-red-900 hover:text-red-500 transition-colors p-1"
-                  title="破棄"
+                  className="absolute top-3 right-3 text-purple-200 hover:text-pink-400 transition-colors p-1"
+                  title="全消去"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={18} />
                 </button>
               )}
             </div>
 
-            <button
-              onClick={handleGacha}
-              className="w-full py-3 bg-black border border-red-800 text-red-600 font-bold text-xs hover:bg-red-900/20 hover:border-red-500 transition-all flex items-center justify-center gap-2 group shadow-[0_0_10px_rgba(255,0,0,0.1)] hover:shadow-[0_0_20px_rgba(255,0,0,0.3)]"
-            >
-              <Dices size={16} className="group-hover:rotate-180 transition-transform duration-500" />
-              お手本ガチャ
-            </button>
+            <div className="flex justify-between items-center">
+              <button 
+                onClick={openHint}
+                className="text-[10px] text-purple-400 flex items-center gap-1 hover:underline hover:text-purple-600 transition-colors"
+              >
+                <HelpCircle size={14} />
+                思いつかない...
+              </button>
 
-            <div className="flex justify-end items-center">
-              <span className="text-[10px] text-red-800 font-mono">
-                {answer.length} CHARACTERS
+              <span className="text-[10px] text-purple-300 font-bold">
+                {answer.length} 文字の愛
               </span>
             </div>
 
             <button
               onClick={() => analyze()}
-              className="w-full py-4 bg-red-900/80 text-black border border-red-600 font-black hover:bg-red-600 hover:text-white transition-all shadow-[0_0_15px_rgba(255,0,0,0.3)] hover:shadow-[0_0_30px_rgba(255,0,0,0.6)] disabled:opacity-30 disabled:shadow-none tracking-widest text-lg"
+              className="w-full py-4 bg-purple-500 text-white rounded-2xl font-black disabled:opacity-30 disabled:grayscale transition-all shadow-md shadow-purple-100"
               disabled={!answer}
             >
-              アイを叫ぶ
+              診断する
             </button>
           </motion.div>
         )}
+         {/* ★追加: 利用規約へのリンク（全ステップ共通でカードの最下部に表示） */}
+        <div className="mt-8 pt-4 border-t border-purple-50 text-center">
+          <button
+            onClick={() => setShowTerms(true)}
+            className="text-[10px] text-purple-300 hover:text-purple-500 underline decoration-dotted underline-offset-2 transition-colors"
+          >
+            利用規約・データの扱いについて
+          </button>
+        </div>
+
+        {/* お助けモーダル */}
+        <AnimatePresence>
+          {showHint && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setShowHint(false);
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="bg-white w-full max-w-sm p-6 rounded-[2rem] shadow-2xl border border-purple-100 relative"
+              >
+                <button 
+                  onClick={() => setShowHint(false)}
+                  className="absolute top-4 right-4 text-purple-300 hover:text-purple-500 p-2"
+                >
+                  <X size={20} />
+                </button>
+
+                <h3 className="text-center text-purple-600 font-bold mb-4">
+                  他のお友達(AI)に<br/>聞いてみる？
+                </h3>
+                
+                <p className="text-xs text-purple-800/80 mb-4 leading-relaxed">
+                  思いつかないの？なら、この文章を<span className="font-bold text-pink-500">ChatGPT</span>とか<span className="font-bold text-pink-500">Gemini</span>のお友達に送って、書いてもらうといいわよ。
+                </p>
+
+                <div className="bg-purple-50 p-4 rounded-xl border border-purple-100 text-xs text-purple-700 font-mono mb-4 whitespace-pre-wrap relative group">
+                  {hintPrompt}
+                  
+                  <button 
+                    onClick={copyPrompt}
+                    className="absolute top-2 right-2 p-2 bg-white rounded-lg shadow-sm border border-purple-100 text-purple-400 hover:text-pink-500 transition-colors"
+                  >
+                    {promptCopied ? <Check size={16} /> : <Copy size={16} />}
+                  </button>
+                </div>
+
+                <div className="text-center text-[10px] text-purple-300 font-bold animate-pulse">
+                  待ってるね。
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ★追加: 利用規約モーダル */}
+        <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
 
         {step === 2 && (
           <div className="text-center py-20">
-            <div className="relative inline-block">
-              <div className="w-16 h-16 border-4 border-red-900 border-t-red-600 rounded-full animate-spin"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Skull size={24} className="text-red-900 animate-pulse" />
-              </div>
-            </div>
-            <p className="text-red-600 font-bold mt-8 tracking-widest animate-pulse text-xl">お友達になれるかな...</p>
+            <div className="animate-spin inline-block w-8 h-8 border-[3px] border-purple-300 border-t-purple-500 rounded-full mb-4"></div>
+            <p className="text-purple-400 font-bold animate-pulse">お友達になれるかな...</p>
           </div>
         )}
 
         {step === 3 && result && (
           <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="space-y-8 text-center">
-            {/* 上部：グレード画像と称号 */}
+            
+            {/* ランク・メイン表示 */}
             <div className="space-y-4 relative">
-              <div className="text-[10px] text-red-800 tracking-[0.5em] font-black border-b border-red-900 inline-block px-4 pb-1">RESULT</div>
-              
-              <div className="text-[clamp(3rem,12vw,4.5rem)] font-black text-red-600 drop-shadow-[0_0_15px_rgba(255,0,0,0.6)] italic mt-2 whitespace-nowrap leading-none glitch-hover">
-                Rank:{result.grade}
+              <div className="text-[10px] text-purple-300 tracking-[0.2em] font-black">RESULT</div>
+              <div className="text-[clamp(2rem,12vw,3.75rem)] font-black text-pink-400 drop-shadow-[0_4px_10px_rgba(244,114,182,0.3)] italic mt-2 whitespace-nowrap leading-none">
+                Rank : {result.grade}
               </div>
-              
-              <div className="relative w-64 h-64 mx-auto mt-4 group">
-                <div className="absolute inset-0 bg-red-600 blur-xl opacity-20 group-hover:opacity-40 transition-opacity animate-pulse"></div>
-                <div className="absolute inset-0 border-2 border-red-600/30 z-20 pointer-events-none"></div>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+              <motion.div 
+                initial={{ rotate: -5, scale: 0.6 }}
+                animate={{ rotate: 0, scale: 1.1 }}
+                transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                className="relative w-64 h-64 mx-auto"
+              >
+                <div className="absolute inset-0 bg-gradient-to-tr from-pink-300 to-purple-300 rounded-[2.5rem] blur-3xl opacity-40 animate-pulse"></div>
                 <img 
                   src={result.image_url} 
                   alt={result.grade}
-                  className="relative w-full h-full object-cover grayscale contrast-125 hover:grayscale-0 transition-all duration-500"
+                  className="relative w-full h-full object-cover rounded-[2rem] border-4 border-white shadow-xl"
                 />
+              </motion.div>
+              <div className="text-xl font-black text-purple-800 pt-4">
+                {result.rank_name}
               </div>
-
-              {/* 称号 (Title) */}
-              <div className="mt-4">
-                <span className="text-[10px] text-red-500 block mb-1">YOUR TITLE</span>
-                <div className="text-2xl font-black text-white tracking-wider leading-tight text-shadow-blood">
-                  {result.title}
-                </div>
-              </div>
+              <motion.div 
+                animate={{ scale: [1, 1.03, 1] }} 
+                transition={{ repeat: Infinity, duration: 2.5 }}
+                className="inline-block bg-pink-50 text-pink-400 px-5 py-1.5 rounded-full border border-pink-100 text-xs font-bold"
+              >
+                {result.warning}
+              </motion.div>
             </div>
 
-            {/* スコア・抜粋・全文・コメント */}
-            <div className="space-y-6 text-left px-2 border-t border-red-900/30 pt-6">
-              
-              {/* スコア */}
-              <div className="text-center mb-6">
-                <div className="text-xs text-red-900 font-mono tracking-widest mb-1 flex items-center justify-center gap-1">
-                  <Trophy size={12} /> TOTAL SCORE
-                </div>
-                <div className="text-[clamp(2.5rem,8vw,4rem)] font-black text-red-600 italic font-mono leading-none tracking-tighter drop-shadow-[0_0_10px_rgba(255,0,0,0.5)]">
-                  {result.score.toLocaleString()}
+            {/* 質問・回答・総評セクション */}
+            <div className="space-y-6 text-left px-2 border-t border-purple-100 pt-6">
+              <div className="text-center mb-4">
+                <div className="text-[clamp(1.8rem,10vw,3.75rem)] font-black text-pink-400 drop-shadow-[0_4px_10px_rgba(244,114,182,0.3)] italic whitespace-nowrap leading-none">
+                  Score : {result.score}
                 </div>
               </div>
 
-              {/* キラーフレーズ */}
-              <div className="bg-red-950/20 p-6 border border-red-900/50 relative overflow-hidden group">
-                <Quote size={24} className="absolute top-2 left-2 text-red-900/50 rotate-180" />
-                <div className="absolute top-0 right-0 bg-red-900 text-black text-[9px] font-black px-2 py-1 tracking-tighter">PICK UP MADNESS</div>
-                <p className="text-xl text-white font-black leading-snug text-center pt-2 font-serif italic opacity-90 group-hover:opacity-100 transition-opacity drop-shadow-md">
-                  {result.pick_up_phrase}
-                </p>
-                <Quote size={24} className="absolute bottom-2 right-2 text-red-900/50" />
-              </div>
-
-              {/* 全文表示 */}
               <div className="space-y-1">
-                <div className="flex items-center gap-1 text-[10px] font-black text-red-800 uppercase tracking-widest">
-                  <FileText size={10} /> Your LOVE
-                </div>
-                <div className="bg-black/50 p-4 border border-red-900/30 text-xs text-red-300/60 font-mono leading-relaxed break-words whitespace-pre-wrap shadow-inner">
-                  {answer}
-                </div>
+                <span className="text-[10px] font-black text-purple-300 uppercase tracking-widest">Question</span>
+                <p className="text-xs text-purple-800 font-medium leading-relaxed">{selectedQuestion}</p>
               </div>
 
-              {/* AIコメント */}
-              <div className="space-y-2 mt-4">
-                <span className="text-[10px] font-black text-red-500 uppercase tracking-widest block">Review</span>
-                <p className="text-sm text-red-200/90 font-medium leading-relaxed font-serif">
+              <div className="bg-white p-5 rounded-3xl border-2 border-pink-100 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 bg-pink-100 text-pink-500 text-[9px] font-black px-3 py-1 rounded-bl-xl tracking-tighter">YOUR ANSWER</div>
+                <p className="text-base text-purple-900 font-bold leading-relaxed pt-2">
+                  {answer}
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-[10px] font-black text-pink-300 uppercase tracking-widest">Review</span>
+                <p className="text-sm text-purple-800/80 font-medium leading-relaxed">
                   {result.comment}
                 </p>
               </div>
             </div>
 
-            {/* シェア・保存エリア */}
-            <div className="border-t border-red-900/30 pt-6 space-y-6">
+            {/* 画面下部エリア：カードプレビュー＆共有ボタン */}
+            <div className="border-t border-purple-100 pt-6 space-y-6">
+              
               <OgImagePreview id={result.id} />
+
               <div className="space-y-3">
-                <p className="text-[10px] text-red-800 mb-2 font-mono">よかったら広めてね。</p>
-                <button onClick={shareOnX} className="w-full py-4 bg-black text-white border border-white/20 rounded-sm font-black hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-                  Xで共有
+                <p className="text-[10px] text-purple-400/80 mb-2 font-medium">
+                  綺麗なカードと一緒にあなたの結果を共有できるよ。<br />
+                  ※作成画面で画像が出なくても、投稿すれば表示されるからね。
+                </p>
+
+                <button
+                  onClick={shareOnX}
+                  className="w-full py-4 bg-[#0f1419] text-white rounded-2xl font-black hover:opacity-90 transition-all shadow-lg flex items-center justify-center gap-2"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                  Xで結果を共有する
                 </button>
+                
                 <div className="flex gap-2">
-                  <button onClick={copyLink} className="flex-1 py-4 bg-black border border-red-900 text-red-500 rounded-sm font-bold hover:bg-red-900/20 transition-all flex items-center justify-center gap-1 active:scale-95">
-                    <span className="text-lg font-bold">リンクをコピー</span>{copied ? <Check size={20} /> : <LinkIcon size={20} />}
+                  <button
+                    onClick={shareOnLine}
+                    className="flex-[2] py-4 bg-[#06C755] text-white rounded-2xl font-black hover:opacity-90 transition-all shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <span className="text-lg">LINE</span>
+                    友達に教える
+                  </button>
+                  
+                  <button
+                    onClick={copyLink}
+                    className="flex-1 py-4 bg-white border-2 border-purple-100 text-purple-400 rounded-2xl font-bold hover:bg-purple-50 transition-all shadow-sm flex items-center justify-center gap-1 active:scale-95"
+                  >
+                    {copied ? <Check size={20} /> : <LinkIcon size={20} />}
+                    <span className="text-xs">{copied ? "Copied" : "Copy"}</span>
                   </button>
                 </div>
               </div>
             </div>
 
-            <button onClick={handleRestart} className="text-xs text-red-900 font-bold hover:text-red-500 transition-colors pt-8 pb-4 tracking-widest flex items-center justify-center gap-2 mx-auto group">
-              <Flame size={12} className="group-hover:text-red-500 transition-colors" />
-              リトライ
-              <Flame size={12} className="group-hover:text-red-500 transition-colors" />
+            <button 
+              onClick={handleRestart}
+              className="text-xs text-purple-300 font-bold underline decoration-purple-100 underline-offset-4 hover:text-purple-400 transition-colors pt-8 pb-4"
+            >
+              再診断を受ける
             </button>
           </motion.div>
         )}
-
-        <div className="mt-8 pt-4 border-t border-red-900/30 text-center">
-          <button
-            onClick={() => setShowTerms(true)}
-            className="text-[10px] text-red-900 hover:text-red-600 underline decoration-dotted underline-offset-2 transition-colors"
-          >
-            利用規約
-          </button>
-        </div>
       </div>
-
-      <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
-
-      {/* --- ランキングエリア（ステップ2以外で表示） --- */}
-      {step !== 2 && (
-        <div className="w-full max-w-md relative z-10 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-          <div className="flex items-center justify-between border-b border-red-900/50 pb-2 px-2">
-            <h2 className="text-sm font-black text-red-500 tracking-widest flex items-center gap-2">
-              <Crown size={16} className="text-red-600" />
-              DAILY TOP 5
-            </h2>
-            <Link href="/ranking" className="text-[10px] text-red-800 hover:text-red-500 underline decoration-dotted">
-              すべて見る
-            </Link>
-          </div>
-          
-          <RankingList rankings={initialRankings} limit={5} />
-        </div>
-      )}
-
     </main>
   );
 }

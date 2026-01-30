@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ScrollText, Check } from "lucide-react";
+import { X, ScrollText } from "lucide-react";
 
 type Props = {
   isOpen: boolean;
@@ -16,7 +16,7 @@ export default function TermsModal({ isOpen, onClose }: Props) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-purple-900/40 backdrop-blur-sm"
           onClick={(e) => {
             if (e.target === e.currentTarget) onClose();
           }}
@@ -25,73 +25,72 @@ export default function TermsModal({ isOpen, onClose }: Props) {
             initial={{ scale: 0.9, y: 20, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.9, y: 20, opacity: 0 }}
-            className="bg-[#0a0000] w-full max-w-sm max-h-[85vh] flex flex-col rounded-sm shadow-[0_0_50px_rgba(255,0,0,0.2)] border border-red-900/50 relative overflow-hidden"
+            className="bg-white/95 w-full max-w-sm max-h-[80vh] flex flex-col rounded-[2rem] shadow-2xl border border-purple-200 relative overflow-hidden"
           >
             {/* ヘッダー */}
-            <div className="p-5 border-b border-red-900/30 flex items-center justify-between bg-red-950/20">
-              <div className="flex items-center gap-2 text-red-500 font-bold tracking-widest">
+            <div className="p-5 border-b border-purple-100 flex items-center justify-between bg-purple-50/50">
+              <div className="flex items-center gap-2 text-purple-600 font-bold">
                 <ScrollText size={18} />
-                <span>利用規約</span>
+                <span>ヒミツの約束（利用規約）</span>
               </div>
               <button 
                 onClick={onClose}
-                className="p-1 text-red-800 hover:text-red-500 transition-colors hover:bg-red-900/20 rounded-full"
+                className="p-1 text-purple-300 hover:text-purple-500 transition-colors bg-white rounded-full shadow-sm"
               >
                 <X size={20} />
               </button>
             </div>
 
             {/* 本文エリア */}
-            <div className="p-6 overflow-y-auto text-sm text-red-100/90 space-y-6 leading-relaxed scrollbar-thin scrollbar-thumb-red-900 scrollbar-track-transparent font-sans">
-              <p className="text-xs text-gray-400">
-                「AI狂愛コロシアム」（以下、本サービス）をご利用いただく前に、以下の規約を必ずご確認ください。
+            <div className="p-6 overflow-y-auto text-sm text-purple-900/80 space-y-4 leading-relaxed scrollbar-thin scrollbar-thumb-purple-200 scrollbar-track-transparent">
+              <p>
+                「AIメンヘラ診断」（以下、当サービス）を利用するにあたり、以下の内容に同意したものとみなします。
               </p>
 
               <div className="space-y-2">
-                <h4 className="font-bold text-red-500 text-xs border-l-2 border-red-600 pl-2">
-                  1. データの公開について
+                <h4 className="font-bold text-purple-600 text-xs bg-purple-100/50 inline-block px-2 py-1 rounded">
+                  1. データの将来的な利用について
                 </h4>
                 <p className="text-xs">
-                  本サービスに入力された回答および診断結果は、<span className="font-bold text-red-400">自動的にサイト内のランキング等で公開されます</span>。不特定多数のユーザーが閲覧可能な状態となることを予めご了承ください。
+                  あなたが入力した回答データは、将来的に開発されるかもしれない<span className="font-bold text-pink-500">「最強のメンヘラ女子AI」</span>などの学習データとして活用させていただく場合があります。あなたの愛の重さが、AIの人格を形成する礎となります。
                 </p>
               </div>
 
               <div className="space-y-2">
-                <h4 className="font-bold text-red-500 text-xs border-l-2 border-red-600 pl-2">
-                  2. 個人情報の入力禁止
+                <h4 className="font-bold text-purple-600 text-xs bg-purple-100/50 inline-block px-2 py-1 rounded">
+                  2. コンテンツ化について
                 </h4>
                 <p className="text-xs">
-                  回答入力欄には、<span className="font-bold text-red-400">個人を特定できる情報（実名、住所、電話番号、SNSアカウント等）を絶対に入力しないでください</span>。入力された情報により生じたトラブルについて、運営者は一切の責任を負いません。
+                  入力された秀逸な回答は、個人を特定できない形で、本サービスに関連する書籍、記事、SNS投稿などで紹介させていただく場合があります。
                 </p>
               </div>
 
               <div className="space-y-2">
-                <h4 className="font-bold text-red-500 text-xs border-l-2 border-red-600 pl-2">
-                  3. データの利用について
+                <h4 className="font-bold text-purple-600 text-xs bg-purple-100/50 inline-block px-2 py-1 rounded">
+                  3. 個人情報の入力禁止
                 </h4>
                 <p className="text-xs">
-                  入力されたデータは、本サービスの改善、AIの学習データ、および関連コンテンツ（SNSでの紹介など）として利用させていただく場合があります。
+                  回答欄には、実名、住所、電話番号などの<span className="font-bold text-red-400">個人情報は絶対に入力しないでください</span>。入力された情報により生じたトラブルについて、運営者は一切の責任を負いません。
                 </p>
               </div>
 
               <div className="space-y-2">
-                <h4 className="font-bold text-red-500 text-xs border-l-2 border-red-600 pl-2">
+                <h4 className="font-bold text-purple-600 text-xs bg-purple-100/50 inline-block px-2 py-1 rounded">
                   4. 免責事項
                 </h4>
                 <p className="text-xs">
-                  本サービスはエンターテインメントを目的としたジョークアプリです。診断結果の正確性や、利用によって生じた損害について保証するものではありません。
+                  本サービスはエンターテインメントを目的としたジョークアプリです。医学的診断やカウンセリングを提供するものではありません。
                 </p>
               </div>
             </div>
 
             {/* フッター */}
-            <div className="p-4 border-t border-red-900/30 bg-black/50">
+            <div className="p-4 border-t border-purple-100 bg-white">
               <button
                 onClick={onClose}
-                className="group w-full py-3 bg-red-950 text-red-500 border border-red-900 rounded-sm font-bold text-sm hover:bg-red-600 hover:text-white hover:border-red-500 transition-all tracking-widest flex items-center justify-center gap-2"
+                className="w-full py-3 bg-gradient-to-r from-purple-400 to-pink-300 text-white rounded-xl font-bold text-sm shadow-md hover:opacity-90 transition-all"
               >
-                <Check size={16} />
-                同意して閉じる
+                理解しました
               </button>
             </div>
           </motion.div>
