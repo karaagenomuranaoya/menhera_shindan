@@ -23,7 +23,7 @@ export default function OgImagePreview({ id }: Props) {
           MadLove Karte
         </h3>
         <p className="text-[10px] text-purple-300">
-          左の方を長押しすると写真に保存できるの。
+          タップして画像を保存
         </p>
       </div>
 
