@@ -44,42 +44,33 @@ export default function TermsModal({ isOpen, onClose }: Props) {
             {/* 本文エリア */}
             <div className="p-6 overflow-y-auto text-sm text-purple-900/80 space-y-4 leading-relaxed scrollbar-thin scrollbar-thumb-purple-200 scrollbar-track-transparent">
               <p>
-                「AIメンヘラ診断」（以下、当サービス）を利用するにあたり、以下の内容に同意したものとみなします。
+                「AIメンヘラ解釈」（以下、当サービス）を利用するにあたり、以下の内容に同意したものとみなします。
               </p>
 
               <div className="space-y-2">
                 <h4 className="font-bold text-purple-600 text-xs bg-purple-100/50 inline-block px-2 py-1 rounded">
-                  1. データの将来的な利用について
+                  1. AIによる生成コンテンツについて
                 </h4>
                 <p className="text-xs">
-                  あなたが入力した回答データは、将来的に開発されるかもしれない<span className="font-bold text-pink-500">「最強のメンヘラ女子AI」</span>などの学習データとして活用させていただく場合があります。あなたの愛の重さが、AIの人格を形成する礎となります。
+                  本サービスはGoogle Gemini AIを使用しており、返信内容はAIが生成した架空のものです。過激な表現が含まれる場合がありますが、特定の個人を攻撃する意図はありません。
                 </p>
               </div>
 
               <div className="space-y-2">
                 <h4 className="font-bold text-purple-600 text-xs bg-purple-100/50 inline-block px-2 py-1 rounded">
-                  2. コンテンツ化について
+                  2. データの公開・利用について
                 </h4>
                 <p className="text-xs">
-                  入力された秀逸な回答は、個人を特定できない形で、本サービスに関連する書籍、記事、SNS投稿などで紹介させていただく場合があります。
+                  あなたが入力したメッセージと、それに対するAIの返答は、本サービス上で匿名で公開（共有）される機能を持っています。個人を特定できる情報（本名、住所、電話番号など）は<span className="font-bold text-red-400">絶対に入力しないでください</span>。
                 </p>
               </div>
 
               <div className="space-y-2">
                 <h4 className="font-bold text-purple-600 text-xs bg-purple-100/50 inline-block px-2 py-1 rounded">
-                  3. 個人情報の入力禁止
+                  3. 免責事項
                 </h4>
                 <p className="text-xs">
-                  回答欄には、実名、住所、電話番号などの<span className="font-bold text-red-400">個人情報は絶対に入力しないでください</span>。入力された情報により生じたトラブルについて、運営者は一切の責任を負いません。
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <h4 className="font-bold text-purple-600 text-xs bg-purple-100/50 inline-block px-2 py-1 rounded">
-                  4. 免責事項
-                </h4>
-                <p className="text-xs">
-                  本サービスはエンターテインメントを目的としたジョークアプリです。医学的診断やカウンセリングを提供するものではありません。
+                  本サービスはエンターテインメントを目的としたジョークアプリです。AIの回答によって生じた精神的苦痛やトラブルについて、運営者は一切の責任を負いません。
                 </p>
               </div>
             </div>

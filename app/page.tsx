@@ -2,7 +2,6 @@ import { Metadata } from 'next';
 import DiagnosisClient from './DiagnosisClient';
 import { createClient } from '@supabase/supabase-js';
 
-// Supabaseクライアントの初期化（サーバーサイド用）
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -11,49 +10,41 @@ type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-// 動的にメタデータを生成
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  // URLの ?id=... を取得
   const { id } = await searchParams;
-
-  // ベースのURL（環境変数かlocalhost）
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-  // デフォルトのメタデータ（IDがない場合）
   const defaultMetadata = {
-    title: "AI メンヘラ診断",
-    description: "あなたの愛の重さをメンヘラのお友達AIが診断します。",
+    title: "AI メンヘラ解釈",
+    description: "あなたが送る普通のメッセージを、メンヘラAIが「愛」か「裏切り」に勝手に超解釈して返信します。",
     openGraph: {
-      title: "AI メンヘラ診断",
-      description: "あなたの愛の重さをメンヘラのお友達AIが診断します。",
-      images: [`${baseUrl}/og-default.png`], // デフォルト画像（publicに置く）
+      title: "AI メンヘラ解釈",
+      description: "普通の言葉が、狂気の愛に変換される。",
+      images: [`${baseUrl}/og-default.png`], 
     },
   };
 
-  // IDがないならデフォルトを返す
   if (!id || typeof id !== 'string') return defaultMetadata;
 
-  // IDがあるならDBから結果を取得して、OGP画像を差し替える
-  const { data } = await supabase.from('diagnoses').select('*').eq('id', id).single();
-
+  // IDがある場合はその結果をOGPにする
+  const { data } = await supabase.from('menhera_chats').select('*').eq('id', id).single();
   if (!data) return defaultMetadata;
 
-  // 動的OGP画像のURLを作成
   const ogUrl = new URL('/api/og', baseUrl);
   ogUrl.searchParams.set('id', id);
 
   return {
-    title: "AI メンヘラ診断",
-    description: `診断結果：${data.rank_name} (Score: ${data.score})`,
+    title: "AI メンヘラ解釈",
+    description: `彼女からの返信: ${data.ai_reply.substring(0, 50)}...`,
     openGraph: {
-      title: "AI メンヘラ診断",
-      description: data.comment,
-      images: [ogUrl.toString()], // ★ここが個別の結果画像になる
+      title: "AI メンヘラ解釈",
+      description: data.ai_reply,
+      images: [ogUrl.toString()],
     },
     twitter: {
       card: 'summary_large_image',
-      title: "AI メンヘラ診断",
-      description: data.comment,
+      title: "AI メンヘラ解釈",
+      description: data.ai_reply,
       images: [ogUrl.toString()],
     },
   };
