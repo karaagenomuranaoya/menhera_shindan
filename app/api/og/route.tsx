@@ -29,6 +29,13 @@ export async function GET(req: NextRequest) {
 
     const { user_input, ai_reply, image_url } = data;
 
+    // --- 変更点ここから ---
+    // AIの返答が120文字を超えていたら切り取って "..." をつける
+    const displayAiReply = ai_reply.length > 120 
+      ? ai_reply.substring(0, 120) + '...' 
+      : ai_reply;
+    // --- 変更点ここまで ---
+
     return new ImageResponse(
       (
         <div
@@ -65,7 +72,7 @@ export async function GET(req: NextRequest) {
               gap: '30px',
             }}
           >
-            {/* 左側：キャラ画像（少し小さくしてスペース確保） */}
+            {/* 左側：キャラ画像 */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '30%', justifyContent: 'center' }}>
               <img
                 src={image_url}
@@ -84,7 +91,7 @@ export async function GET(req: NextRequest) {
               </div>
             </div>
 
-            {/* 右側：チャットエリア（AIメイン） */}
+            {/* 右側：チャットエリア */}
             <div style={{ 
               display: 'flex', 
               flexDirection: 'column', 
@@ -94,7 +101,7 @@ export async function GET(req: NextRequest) {
               alignItems: 'center',
             }}>
               
-              {/* ユーザーの言葉（控えめに表示） */}
+              {/* ユーザーの言葉 */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
                  <div style={{ fontSize: '14px', color: '#a855f7', fontWeight: 'bold', marginBottom: '5px', opacity: 0.6 }}>YOU</div>
                  <div style={{ 
@@ -102,32 +109,31 @@ export async function GET(req: NextRequest) {
                    color: '#6b21a8', 
                    padding: '12px 25px', 
                    borderRadius: '20px', 
-                   fontSize: '25px', // 小さめ
+                   fontSize: '25px', 
                    fontWeight: '600',
                    textAlign: 'center',
                    maxWidth: '90%',
                    boxShadow: 'none',
                    border: '1px solid #e9d5ff'
                  }}>
-                   {/* OGP上では長すぎるとバランス崩れるので、表示上は40文字程度で省略 */}
                    {user_input.length > 40 ? user_input.substring(0, 40) + '...' : user_input}
                  </div>
               </div>
 
-              {/* 矢印（下向き・控えめ） */}
+              {/* 矢印 */}
               <div style={{ display: 'flex', opacity: 0.2 }}>
                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="3">
                    <path d="M12 5v14M5 12l7 7 7-7" />
                  </svg>
               </div>
 
-              {/* AIの返信（ここを主役に・大きく） */}
+              {/* AIの返信 */}
               <div style={{ 
                 display: 'flex', 
                 flexDirection: 'column', 
                 alignItems: 'center', 
                 width: '100%', 
-                flex: 1, // 残りの高さを全部使う
+                flex: 1,
                 justifyContent: 'center' 
               }}>
                  <div style={{ fontSize: '16px', color: '#ec4899', fontWeight: 'bold', marginBottom: '8px', opacity: 0.8 }}>INTERPRETATION</div>
@@ -137,18 +143,19 @@ export async function GET(req: NextRequest) {
                    padding: '30px', 
                    borderRadius: '30px', 
                    border: '3px solid #fce7f3',
-                   fontSize: '32px', // 大きく！
+                   fontSize: '32px',
                    fontWeight: '900',
-                   lineHeight: '1.5', // 行間ゆったり
+                   lineHeight: '1.5',
                    textAlign: 'center',
                    width: '100%',
-                   height: '100%', // 親要素いっぱいに広げる
+                   height: '100%',
                    display: 'flex',
                    alignItems: 'center',
                    justifyContent: 'center',
                    boxShadow: '0 10px 40px rgba(236, 72, 153, 0.15)'
                  }}>
-                   {ai_reply}
+                   {/* ここを変数 displayAiReply に変更しました */}
+                   {displayAiReply}
                  </div>
               </div>
 
