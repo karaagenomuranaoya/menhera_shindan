@@ -31,8 +31,8 @@ export async function GET(req: NextRequest) {
 
     // --- 変更点ここから ---
     // AIの返答が120文字を超えていたら切り取って "..." をつける
-    const displayAiReply = ai_reply.length > 118 
-      ? ai_reply.substring(0, 118) + '...' 
+    const displayAiReply = ai_reply.length > 119 
+      ? ai_reply.substring(0, 119) + '...' 
       : ai_reply;
     // --- 変更点ここまで ---
 
