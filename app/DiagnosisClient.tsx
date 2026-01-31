@@ -65,7 +65,7 @@ export default function DiagnosisClient() {
 
   const shareOnX = () => {
     if (!result) return;
-    const text = `AIメンヘラ彼女\n私: ${result.user_input.substring(0, 15)}...\n彼女: ${result.ai_reply.substring(0, 20)}...\n#AIメンヘラ彼女\n`;
+    const text = `AIメンヘラ彼女が怖すぎた...\n#AIメンヘラ彼女\n`;
     const shareUrl = `${window.location.origin}/result/${result.id}`;
     const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
     window.open(xUrl, "_blank");
