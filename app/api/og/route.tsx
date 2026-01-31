@@ -136,7 +136,7 @@ export async function GET(req: NextRequest) {
                 flex: 1,
                 justifyContent: 'center' 
               }}>
-                 <div style={{ fontSize: '16px', color: '#ec4899', fontWeight: 'bold', marginBottom: '8px', opacity: 0.8 }}>INTERPRETATION</div>
+                 <div style={{ fontSize: '16px', color: '#ec4899', fontWeight: 'bold', marginBottom: '8px', opacity: 0.8 }}>AI's Reply</div>
                  <div style={{ 
                    backgroundColor: 'white', 
                    color: '#be185d', 
