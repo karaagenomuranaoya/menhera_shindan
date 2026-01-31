@@ -76,7 +76,7 @@ export default async function ResultPage({ params }: Props) {
            <div className="flex justify-end items-end gap-2">
              <div className="space-y-1 text-right max-w-[80%]">
                 <span className="text-[10px] text-purple-300 font-bold mr-1">YOU</span>
-                <div className="bg-purple-100 text-purple-900 text-sm py-3 px-4 rounded-2xl rounded-br-none shadow-sm text-left">
+                <div className="bg-purple-100 text-purple-900 text-sm py-3 px-4 rounded-2xl shadow-sm text-left">
                   {result.user_input}
                 </div>
              </div>
@@ -88,9 +88,9 @@ export default async function ResultPage({ params }: Props) {
                <img src={result.image_url} alt="AI" className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md" />
                <span className="text-[10px] text-purple-300 font-bold">HER</span>
              </div>
-             <div className="bg-white text-purple-900 text-base font-bold py-4 px-5 rounded-2xl rounded-tl-none shadow-md border-2 border-pink-50 leading-relaxed max-w-[85%] relative">
+             <div className="bg-white text-purple-900 text-base font-bold py-4 px-5 rounded-2xl shadow-md border-2 border-pink-50 leading-relaxed max-w-[85%] relative">
                {result.ai_reply}
-               <div className="absolute -top-2 -left-2 text-2xl">⚡️</div>
+               <div className="absolute -top-2 -left-2 text-2xl"></div>
              </div>
            </div>
         </div>
