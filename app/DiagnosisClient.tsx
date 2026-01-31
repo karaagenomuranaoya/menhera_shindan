@@ -114,7 +114,7 @@ export default function DiagnosisClient() {
             className="text-xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-purple-500 to-pink-400 inline-block cursor-pointer"
           >
             AIメンヘラ彼女<br/>
-            <span className="text-[10px] font-bold text-purple-300 tracking-normal">Menhera Decoder</span>
+            <span className="text-[10px] font-bold text-purple-300 tracking-normal">AI Menhera GirlFriend</span>
           </h1>
         </div>
 
