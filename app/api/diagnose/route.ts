@@ -63,7 +63,6 @@ export async function POST(req: Request) {
       console.error("Rate limit check failed:", e);
     }
 
-    // AI生成
     const apiKey = process.env.GOOGLE_API_KEY;
     if (!apiKey) throw new Error("API Key is missing");
 

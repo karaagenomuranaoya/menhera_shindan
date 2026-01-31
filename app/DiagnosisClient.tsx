@@ -140,8 +140,8 @@ export default function DiagnosisClient() {
                 </p>
                 <p className="text-xs text-purple-400/80 leading-relaxed max-w-[260px] mx-auto">
                   あなたが送る普通のメッセージを<br/>
-                  メンヘラAIが「愛」か「裏切り」に<br/>
-                  勝手に超解釈して返信します。
+                  メンヘラAIが「大好き」に<br/>
+                  変換して返信します。
                 </p>
               </div>
 
@@ -149,7 +149,7 @@ export default function DiagnosisClient() {
                 onClick={() => setStep(1)} 
                 className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-400 text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-purple-200 flex items-center justify-center gap-2"
               >
-                LINEを送ってみる
+                AIにメッセージを送ってみる
                 <Send size={18} />
               </button>
             </motion.div>
