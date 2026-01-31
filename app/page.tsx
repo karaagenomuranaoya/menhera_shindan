@@ -20,7 +20,15 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     openGraph: {
       title: "AI メンヘラ彼女",
       description: "普通の言葉が、狂気の愛に変換される。",
-      images: [`${baseUrl}/og-default.png`], 
+      // ▼▼▼ 修正: ogp.png を参照するように変更 ▼▼▼
+      images: [`${baseUrl}/ogp.png`], 
+    },
+    // ▼▼▼ 推奨: Twitterカード用も設定しておくとXでのシェア時に反映されます ▼▼▼
+    twitter: {
+      card: 'summary_large_image',
+      title: "AI メンヘラ彼女",
+      description: "普通の言葉が、狂気の愛に変換される。",
+      images: [`${baseUrl}/ogp.png`],
     },
   };
 

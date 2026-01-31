@@ -257,7 +257,7 @@ export default function DiagnosisClient() {
 
   const shareOnX = () => {
     if (!result) return;
-    const text = `AIメンヘラ彼女\n私: ${result.user_input.substring(0, 15)}...\n彼女: ${result.ai_reply.substring(0, 20)}...\n#AIメンヘラ彼女\n`;
+    const text = `AIメンヘラ彼女が怖すぎた...\n#AIメンヘラ彼女\n`;
     const shareUrl = `${window.location.origin}/result/${result.id}`;
     const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
     window.open(xUrl, "_blank");
@@ -306,7 +306,7 @@ export default function DiagnosisClient() {
             className="text-xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-purple-500 to-pink-400 inline-block cursor-pointer"
           >
             AIメンヘラ彼女<br/>
-            <span className="text-[10px] font-bold text-purple-300 tracking-normal">Menhera Decoder</span>
+            <span className="text-[10px] font-bold text-purple-300 tracking-normal">AI Menhera GirlFriend</span>
           </h1>
         </div>
 
@@ -614,6 +614,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
 import { Metadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
+// ▼ 追加: コンポーネントをインポート
+import OgImagePreview from '../../components/OgImagePreview';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -687,7 +689,7 @@ export default async function ResultPage({ params }: Props) {
            <div className="flex justify-end items-end gap-2">
              <div className="space-y-1 text-right max-w-[80%]">
                 <span className="text-[10px] text-purple-300 font-bold mr-1">YOU</span>
-                <div className="bg-purple-100 text-purple-900 text-sm py-3 px-4 rounded-2xl rounded-br-none shadow-sm text-left">
+                <div className="bg-purple-100 text-purple-900 text-sm py-3 px-4 rounded-2xl shadow-sm text-left">
                   {result.user_input}
                 </div>
              </div>
@@ -699,16 +701,21 @@ export default async function ResultPage({ params }: Props) {
                <img src={result.image_url} alt="AI" className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md" />
                <span className="text-[10px] text-purple-300 font-bold">HER</span>
              </div>
-             <div className="bg-white text-purple-900 text-base font-bold py-4 px-5 rounded-2xl rounded-tl-none shadow-md border-2 border-pink-50 leading-relaxed max-w-[85%] relative">
+             <div className="bg-white text-purple-900 text-base font-bold py-4 px-5 rounded-2xl shadow-md border-2 border-pink-50 leading-relaxed max-w-[85%] relative">
                {result.ai_reply}
-               <div className="absolute -top-2 -left-2 text-2xl">⚡️</div>
+               <div className="absolute -top-2 -left-2 text-2xl"></div>
              </div>
            </div>
         </div>
 
-        <div className="pt-4 space-y-3">
+        {/* ▼ 追加: OGP画像プレビューエリア（区切り線を追加して配置） */}
+        <div className="border-t border-purple-100 pt-4">
+          <OgImagePreview id={result.id} />
+        </div>
+
+        <div className="pt-2 space-y-3">
           <p className="text-xs text-center text-purple-400 font-bold">
-            普通の言葉を送っただけなのに...
+            あなたの言葉も聞いてみたいな♡
           </p>
           <Link href="/" className="block w-full py-4 bg-gradient-to-r from-purple-500 to-pink-400 text-white rounded-2xl font-black hover:opacity-90 transition-all shadow-lg text-center animate-pulse">
             自分も試してみる
@@ -726,7 +733,7 @@ export default async function ResultPage({ params }: Props) {
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Download } from "lucide-react"; // Share2 を削除
+import { Download, Sparkles } from "lucide-react"; // Sparkles（キラキラ）を追加すると可愛いです
 
 type Props = {
   id: string;
@@ -738,33 +745,38 @@ export default function OgImagePreview({ id }: Props) {
   // OGP画像のURL
   const imageUrl = `/api/og?id=${id}`;
 
-  // 画像ダウンロード処理
-  const handleDownload = async () => {
-    try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `menhera-diagnosis-${id}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch (e) {
-      alert("画像の保存に失敗しました...");
-    }
-  };
-
   return (
-    <div className="w-full max-w-lg mx-auto mt-6 mb-8 space-y-4">
-      <div className="text-center space-y-1">
+    <div className="w-full max-w-lg mx-auto mt-6 mb-8 space-y-6">
+      <div className="text-center space-y-3">
         <h3 className="text-sm font-bold text-purple-400 tracking-widest">
-          Menhera Girlfriend
+          Menhera Reply
         </h3>
-        <p className="text-[10px] text-purple-300">
-          左の方を長押しすると写真に保存できるの。
-        </p>
+
+        {/* --- ここを変更: 目立つアニメーション付きバッジ --- */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4, type: "spring" }}
+          className="relative inline-block"
+        >
+          <motion.div
+            // ふわふわ動くアニメーション
+            animate={{ y: [0, -4, 0] }}
+            transition={{ 
+              duration: 2, 
+              repeat: Infinity, 
+              ease: "easeInOut" 
+            }}
+            className="flex items-center gap-2 bg-white/90 border-2 border-purple-300 px-4 py-2 rounded-full shadow-lg shadow-purple-200/50 mx-auto"
+          >
+            {/* アイコンで直感的に伝える */}
+            <Download className="w-4 h-4 text-purple-500 animate-bounce" />
+            <p className="text-xs font-bold text-purple-600">
+              画像の左側を長押しして保存してね♡
+            </p>
+          </motion.div>
+        </motion.div>
+        {/* ------------------------------------------- */}
       </div>
 
       {/* カードプレビューエリア */}
@@ -791,22 +803,11 @@ export default function OgImagePreview({ id }: Props) {
             </div>
           )}
 
-          {/* リッチな光沢エフェクト（オーバーレイ） */}
+          {/* リッチな光沢エフェクト */}
           <div className="absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-black/10 pointer-events-none mix-blend-overlay"></div>
           <div className="absolute -inset-[100%] bg-gradient-to-r from-transparent via-white/30 to-transparent rotate-45 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
         </div>
       </motion.div>
-
-      {/* アクションボタン（ここをシンプルに一本化） */}
-      <div className="flex justify-center">
-        <button
-          onClick={handleDownload}
-          className="w-full py-3 px-4 bg-white text-purple-600 border border-purple-200 rounded-xl font-bold text-sm shadow-sm hover:bg-purple-50 transition-colors flex items-center justify-center gap-2"
-        >
-          <Download size={16} />
-          画像を保存する
-        </button>
-      </div>
     </div>
   );
 }
@@ -1426,8 +1427,8 @@ export async function GET(req: NextRequest) {
 
     // --- 変更点ここから ---
     // AIの返答が120文字を超えていたら切り取って "..." をつける
-    const displayAiReply = ai_reply.length > 120 
-      ? ai_reply.substring(0, 120) + '...' 
+    const displayAiReply = ai_reply.length > 119 
+      ? ai_reply.substring(0, 119) + '...' 
       : ai_reply;
     // --- 変更点ここまで ---
 
