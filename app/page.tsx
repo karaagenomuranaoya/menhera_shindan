@@ -16,10 +16,10 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
   const defaultMetadata = {
     title: "AI メンヘラ彼女",
-    description: "あなたが送る普通のメッセージを、メンヘラAIが「愛」に勝手に超解釈して返信します。",
+    description: "あなたの何気ないメッセージに、メンヘラAIが♡かわいく猟奇的に♡返信します。",
     openGraph: {
       title: "AI メンヘラ彼女",
-      description: "普通の言葉が、狂気の愛に変換される。",
+      description: "AIが愛と恐怖をあなたにぶつけます。",
       // ▼▼▼ 修正: ogp.png を参照するように変更 ▼▼▼
       images: [`${baseUrl}/ogp.png`], 
     },
@@ -27,7 +27,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     twitter: {
       card: 'summary_large_image',
       title: "AI メンヘラ彼女",
-      description: "普通の言葉が、狂気の愛に変換される。",
+      description: "AIが愛と恐怖をあなたにぶつけます。",
       images: [`${baseUrl}/ogp.png`],
     },
   };

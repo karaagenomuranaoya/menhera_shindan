@@ -71,14 +71,6 @@ export default function DiagnosisClient() {
     window.open(xUrl, "_blank");
   };
 
-  const shareOnLine = () => {
-    if (!result) return;
-    const text = `AIメンヘラ彼女\n彼女からの返信が届きました。`;
-    const shareUrl = `${window.location.origin}/result/${result.id}`;
-    const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
-    window.open(lineUrl, "_blank");
-  };
-
   const copyLink = () => {
     if (!result) return;
     const shareUrl = `${window.location.origin}/result/${result.id}`;
@@ -135,13 +127,22 @@ export default function DiagnosisClient() {
               {/* ▲▲▲ 修正ここまで ▲▲▲ */}
               
               <div className="space-y-2">
-                <p className="text-purple-800 font-bold text-lg">
-                  その言葉、<br/>彼女はどう受け取る？
-                </p>
                 <p className="text-xs text-purple-400/80 leading-relaxed max-w-[260px] mx-auto">
-                  あなたが送る普通のメッセージを<br/>
-                  メンヘラAIが「大好き」に<br/>
-                  変換して返信します。
+                 <span className="block py-2">
+                    <span className="inline-block animate-bounce-subtle text-base font-black tracking-tighter bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-[0_2px_2px_rgba(255,182,193,0.5)]">
+                     AIがあなたのメッセージに
+                    </span>
+                 </span>
+                  <span className="block py-2">
+                    <span className="inline-block animate-bounce-subtle text-base font-black tracking-tighter bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-[0_2px_2px_rgba(255,182,193,0.5)]">
+                     ♡かわいく猟奇的に♡
+                    </span>
+                 </span>
+                  <span className="block py-2">
+                    <span className="inline-block animate-bounce-subtle text-base font-black tracking-tighter bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-[0_2px_2px_rgba(255,182,193,0.5)]">
+                     返信します。
+                    </span>
+                 </span>
                 </p>
               </div>
 

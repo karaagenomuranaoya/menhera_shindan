@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "AI メンヘラ診断",
-  description: "あなたの愛の重さをメンヘラのお友達AIが診断します。",
+  description: "なたの何気ないメッセージに、メンヘラAIが♡かわいく猟奇的に♡返信します。",
   viewport: "width=device-width, initial-scale=1",
   icons: {
     icon: "/favicon.png", // public/favicon.png を参照
