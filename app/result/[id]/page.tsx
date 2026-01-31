@@ -102,7 +102,7 @@ export default async function ResultPage({ params }: Props) {
 
         <div className="pt-2 space-y-3">
           <p className="text-xs text-center text-purple-400 font-bold">
-            普通の言葉を送っただけなのに...
+            あなたの言葉も聞いてみたいな♡
           </p>
           <Link href="/" className="block w-full py-4 bg-gradient-to-r from-purple-500 to-pink-400 text-white rounded-2xl font-black hover:opacity-90 transition-all shadow-lg text-center animate-pulse">
             自分も試してみる
