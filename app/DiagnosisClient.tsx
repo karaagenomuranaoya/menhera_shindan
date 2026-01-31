@@ -65,7 +65,7 @@ export default function DiagnosisClient() {
 
   const shareOnX = () => {
     if (!result) return;
-    const text = `AIメンヘラ解釈\n私: ${result.user_input.substring(0, 15)}...\n彼女: ${result.ai_reply.substring(0, 20)}...\n#AIメンヘラ解釈\n`;
+    const text = `AIメンヘラ彼女\n私: ${result.user_input.substring(0, 15)}...\n彼女: ${result.ai_reply.substring(0, 20)}...\n#AIメンヘラ彼女\n`;
     const shareUrl = `${window.location.origin}/result/${result.id}`;
     const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
     window.open(xUrl, "_blank");
@@ -73,7 +73,7 @@ export default function DiagnosisClient() {
 
   const shareOnLine = () => {
     if (!result) return;
-    const text = `AIメンヘラ解釈\n彼女からの返信が届きました。`;
+    const text = `AIメンヘラ彼女\n彼女からの返信が届きました。`;
     const shareUrl = `${window.location.origin}/result/${result.id}`;
     const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
     window.open(lineUrl, "_blank");
@@ -113,7 +113,7 @@ export default function DiagnosisClient() {
             onClick={() => setStep(0)}
             className="text-xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-purple-500 to-pink-400 inline-block cursor-pointer"
           >
-            AIメンヘラ解釈<br/>
+            AIメンヘラ彼女<br/>
             <span className="text-[10px] font-bold text-purple-300 tracking-normal">Menhera Decoder</span>
           </h1>
         </div>
@@ -241,7 +241,8 @@ export default function DiagnosisClient() {
                 <OgImagePreview id={result.id} />
                 
                 <p className="text-[10px] text-center text-purple-400 font-medium">
-                  この狂った解釈をシェアしよう
+                  かわいい彼女の返信をシェアしよう<br></br>
+                  編集の時に画像が出なくても、送信したらちゃんと上の画像が出るからね
                 </p>
 
                 <div className="flex gap-2">
@@ -251,17 +252,11 @@ export default function DiagnosisClient() {
                   >
                     Xで共有
                   </button>
-                  <button
-                    onClick={shareOnLine}
-                    className="flex-[2] py-3 bg-[#06C755] text-white rounded-xl font-bold text-xs hover:opacity-80 transition-all flex items-center justify-center gap-2"
-                  >
-                    LINEで送る
-                  </button>
                    <button
                     onClick={copyLink}
                     className="flex-1 py-3 bg-white border border-purple-200 text-purple-400 rounded-xl font-bold hover:bg-purple-50 transition-all flex items-center justify-center"
                   >
-                    {copied ? <Check size={18} /> : <LinkIcon size={18} />}
+                    <p>リンク</p>{copied ? <Check size={18} /> : <LinkIcon size={18} />}
                   </button>
                 </div>
               </div>

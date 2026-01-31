@@ -17,22 +17,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   
-  if (!data) return { title: 'ページが見つかりません | AIメンヘラ解釈' };
+  if (!data) return { title: 'ページが見つかりません | AIメンヘラ彼女' };
 
   const ogUrl = new URL('/api/og', baseUrl);
   ogUrl.searchParams.set('id', id);
 
   return {
-    title: `AIメンヘラ解釈：彼女からの返信`,
+    title: `AIメンヘラ彼女：彼女からの返信`,
     description: `私: ${data.user_input.substring(0, 20)}... -> 彼女: ${data.ai_reply.substring(0, 40)}...`,
     openGraph: {
-      title: 'AIメンヘラ解釈',
+      title: 'AIメンヘラ彼女',
       description: data.ai_reply,
       images: [ogUrl.toString()],
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'AIメンヘラ解釈',
+      title: 'AIメンヘラ彼女',
       description: data.ai_reply,
       images: [ogUrl.toString()],
     },
@@ -65,7 +65,7 @@ export default async function ResultPage({ params }: Props) {
         </div>
 
         <h1 className="text-center text-xl font-black text-transparent bg-clip-text bg-gradient-to-br from-purple-500 to-pink-400 mt-2">
-          AIメンヘラ解釈結果
+          AIメンヘラ彼女
         </h1>
 
         {/* チャット表示 */}

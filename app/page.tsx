@@ -15,10 +15,10 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
   const defaultMetadata = {
-    title: "AI メンヘラ解釈",
-    description: "あなたが送る普通のメッセージを、メンヘラAIが「愛」か「裏切り」に勝手に超解釈して返信します。",
+    title: "AI メンヘラ彼女",
+    description: "あなたが送る普通のメッセージを、メンヘラAIが「愛」に勝手に超解釈して返信します。",
     openGraph: {
-      title: "AI メンヘラ解釈",
+      title: "AI メンヘラ彼女",
       description: "普通の言葉が、狂気の愛に変換される。",
       images: [`${baseUrl}/og-default.png`], 
     },
@@ -34,16 +34,16 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   ogUrl.searchParams.set('id', id);
 
   return {
-    title: "AI メンヘラ解釈",
+    title: "AI メンヘラ彼女",
     description: `彼女からの返信: ${data.ai_reply.substring(0, 50)}...`,
     openGraph: {
-      title: "AI メンヘラ解釈",
+      title: "AI メンヘラ彼女",
       description: data.ai_reply,
       images: [ogUrl.toString()],
     },
     twitter: {
       card: 'summary_large_image',
-      title: "AI メンヘラ解釈",
+      title: "AI メンヘラ彼女",
       description: data.ai_reply,
       images: [ogUrl.toString()],
     },
