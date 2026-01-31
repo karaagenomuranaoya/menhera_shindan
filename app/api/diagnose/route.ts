@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     if (!apiKey) throw new Error("API Key is missing");
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
     // プロンプト：普通の文章を病的に解釈させる
     const prompt = `
