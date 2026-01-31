@@ -1,6 +1,8 @@
 import { Metadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
+// ▼ 追加: コンポーネントをインポート
+import OgImagePreview from '../../components/OgImagePreview';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -93,7 +95,12 @@ export default async function ResultPage({ params }: Props) {
            </div>
         </div>
 
-        <div className="pt-4 space-y-3">
+        {/* ▼ 追加: OGP画像プレビューエリア（区切り線を追加して配置） */}
+        <div className="border-t border-purple-100 pt-4">
+          <OgImagePreview id={result.id} />
+        </div>
+
+        <div className="pt-2 space-y-3">
           <p className="text-xs text-center text-purple-400 font-bold">
             普通の言葉を送っただけなのに...
           </p>
