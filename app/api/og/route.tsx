@@ -144,7 +144,7 @@ export async function GET(req: NextRequest) {
                    padding: '30px', 
                    borderRadius: '30px', 
                    border: '3px solid #fce7f3',
-                   fontSize: '32px',
+                   fontSize: '42px',
                    fontWeight: '900',
                    lineHeight: '1.5',
                    textAlign: 'center',
