@@ -163,15 +163,15 @@ export default function DiagnosisClient() {
 			localStorage.removeItem(STORAGE_KEY);
 		}
 	};
-
-	const sendMessage = async () => {
-		if (!userInput.trim()) return;
-		setStep(2);
+	// ▼▼▼ 修正: 診断処理を実行する関数を切り出し（引数でテキストを受け取る） ▼▼▼
+	const executeDiagnosis = async (text: string) => {
+		if (!text.trim()) return;
+		setStep(2); // ローディング画面へ
 		try {
 			const res = await fetch("/api/diagnose", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ user_input: userInput }),
+				body: JSON.stringify({ user_input: text }), // 引数のテキストを送信
 			});
 
 			const data = await res.json();
@@ -179,7 +179,7 @@ export default function DiagnosisClient() {
 			if (!data.id) throw new Error("API Error");
 
 			setResult(data);
-			setStep(3);
+			setStep(3); // 結果画面へ
 		} catch (e) {
 			console.error(e);
 			alert(
@@ -189,11 +189,15 @@ export default function DiagnosisClient() {
 		}
 	};
 
+	// ▼▼▼ 修正: 送信ボタン用ラッパー ▼▼▼
+	const sendMessage = () => {
+		executeDiagnosis(userInput);
+	};
+
+	// ▼▼▼ 修正: サジェスト用（セットして即送信！） ▼▼▼
 	const handleSuggestion = (text: string) => {
-		setUserInput(text);
-		if (textareaRef.current) {
-			textareaRef.current.focus();
-		}
+		setUserInput(text); // 見た目上も入力欄に入れておく
+		executeDiagnosis(text); // ★ここで即座に送信処理を実行★
 	};
 
 	const shareOnX = () => {

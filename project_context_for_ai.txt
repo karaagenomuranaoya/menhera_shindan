@@ -6,6 +6,8 @@
 ├── .vercel
 │   ├── README.txt
 │   └── project.json
+├── .vscode
+│   └── settings.json
 ├── all_code.py
 ├── app
 │   ├── .DS_Store
@@ -21,6 +23,8 @@
 │   ├── components
 │   │   ├── OgImagePreview.tsx
 │   │   └── TermsModal.tsx
+│   ├── data
+│   │   └── replies.ts
 │   ├── globals.css
 │   ├── layout.tsx
 │   ├── page.tsx
@@ -28,6 +32,7 @@
 │   │   └── [id]
 │   │       └── page.tsx
 │   └── sitemap.ts
+├── biome.json
 ├── directory_tree.txt
 ├── eslint.config.mjs
 ├── menhera_shindan_backup.zip
@@ -43,6 +48,45 @@
 ```
 
 ---
+
+## File: biome.json
+```json
+{
+	"$schema": "https://biomejs.dev/schemas/2.3.13/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"ignoreUnknown": false
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab"
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double"
+		}
+	},
+	"assist": {
+		"enabled": true,
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	}
+}
+
+```
 
 ## File: eslint.config.mjs
 ```mjs
@@ -118,6 +162,7 @@ export default nextConfig;
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.3.13",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -191,458 +236,533 @@ export default config;
 ## File: app/DiagnosisClient.tsx
 ```tsx
 "use client";
-import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, Link as LinkIcon, Check, ChevronLeft, Send, Sparkles, RefreshCw, Shuffle } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+	Check,
+	ChevronLeft,
+	Link as LinkIcon,
+	RefreshCw,
+	Send,
+	Shuffle,
+	Sparkles,
+	Trash2,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import OgImagePreview from "./components/OgImagePreview";
 import TermsModal from "./components/TermsModal";
 
 type ChatResult = {
-  id: string;
-  user_input: string;
-  ai_reply: string;
-  image_url: string;
+	id: string;
+	user_input: string;
+	ai_reply: string;
+	image_url: string;
 };
 
-const STORAGE_KEY = "menhera_chat_draft"; 
+const STORAGE_KEY = "menhera_chat_draft";
 
 // 修正用のヘルパー関数を作成（コンポーネント内でも外でもOK）
 const formatReply = (text: string) => {
-  // [[...]] の部分を削除して返す
-  return text.replace(/\[\[.*?\]\]/g, "").trim();
+	// [[...]] の部分を削除して返す
+	return text.replace(/\[\[.*?\]\]/g, "").trim();
 };
-
 
 // ▼▼▼ 100個以上の厳選ワードリスト ▼▼▼
 const ALL_SUGGESTIONS = [
-  // --- 基本・日常 ---
-  "おはよう",
-  "おやすみ",
-  "仕事終わった！疲れた〜",
-  "今からお風呂入るね",
-  "今日は雨だね",
-  "お腹すいた...何食べよう？",
-  "美容院行ってくる",
-  "コンビニ行ってくる",
-  "ただいま！",
-  "パソコンが壊れちゃった",
+	// --- 基本・日常 ---
+	"おはよう",
+	"おやすみ",
+	"仕事終わった！疲れた〜",
+	"今からお風呂入るね",
+	"今日は雨だね",
+	"お腹すいた...何食べよう？",
+	"美容院行ってくる",
+	"コンビニ行ってくる",
+	"ただいま！",
+	"パソコンが壊れちゃった",
 
-  // --- 疑惑・地雷（軽） ---
-  "ごめん、昨日は寝落ちしてた",
-  "スマホの通知オフにするね",
-  "バッテリー切れそう",
-  "今、運転中だからまた後で",
-  "週末は友達と旅行行ってくる",
-  "会社の飲み会行ってくる！",
-  "今日は帰り遅くなるかも",
-  "久しぶりに同窓会があるんだ",
-  "その日は予定があるから無理",
-  "知らない番号から着信があった",
+	// --- 疑惑・地雷（軽） ---
+	"ごめん、昨日は寝落ちしてた",
+	"スマホの通知オフにするね",
+	"バッテリー切れそう",
+	"今、運転中だからまた後で",
+	"週末は友達と旅行行ってくる",
+	"会社の飲み会行ってくる！",
+	"今日は帰り遅くなるかも",
+	"久しぶりに同窓会があるんだ",
+	"その日は予定があるから無理",
+	"知らない番号から着信があった",
 
-  // --- 疑惑・地雷（重） ---
-  "スマホのパスワード変えたよ",
-  "会社の女の子にチョコもらった",
-  "元カノから連絡きたんだけど",
-  "最近、視線を感じる気がする...",
-  "GPSアプリ、バッテリー食うから消したよ",
-  "誰かと間違えてない？",
-  "え、その話したっけ？",
-  "ちょっと一人になりたい",
-  "携帯、家に忘れてた",
-  "なんでそんなに疑うの？",
+	// --- 疑惑・地雷（重） ---
+	"スマホのパスワード変えたよ",
+	"会社の女の子にチョコもらった",
+	"元カノから連絡きたんだけど",
+	"最近、視線を感じる気がする...",
+	"GPSアプリ、バッテリー食うから消したよ",
+	"誰かと間違えてない？",
+	"え、その話したっけ？",
+	"ちょっと一人になりたい",
+	"携帯、家に忘れてた",
+	"なんでそんなに疑うの？",
 
-  // --- 愛情・激重 ---
-  "愛してる。死ぬまで一緒だよ",
-  "世界で一番好きだよ",
-  "ずっと一緒にいようね",
-  "GPSつけていいよ♡",
-  "僕のすべては君のものだよ",
-  "結婚しよう",
-  "合鍵、作っておいたよ",
-  "大好きだよ",
-  "来世でも一緒にいようね",
-  "君の好きなところ、100個言えるよ",
-  "僕の心臓、君にあげる",
-  "かわいいね",
-  "君の匂いがすると安心する",
-  "もう君しか見えない",
+	// --- 愛情・激重 ---
+	"愛してる。死ぬまで一緒だよ",
+	"世界で一番好きだよ",
+	"ずっと一緒にいようね",
+	"GPSつけていいよ♡",
+	"僕のすべては君のものだよ",
+	"結婚しよう",
+	"合鍵、作っておいたよ",
+	"大好きだよ",
+	"来世でも一緒にいようね",
+	"君の好きなところ、100個言えるよ",
+	"僕の心臓、君にあげる",
+	"かわいいね",
+	"君の匂いがすると安心する",
+	"もう君しか見えない",
 
-  // --- 拒絶・冷淡（危険） ---
-  "ちょっと距離を置きたい",
-  "重い。疲れた",
-  "連絡してこないで",
-  "別れよう",
-  "僕のこと嫌いになった？",
-  "もう限界かもしれない",
-  "友達に戻ろう",
-  "そういうところ、直してほしい",
-  "鍵、ポストに入れておいて",
-  "話がある",
-  "他に好きな人ができた",
-  "もう信じられない",
-  "放っておいてくれ",
-  "依存するのは良くないよ",
+	// --- 拒絶・冷淡（危険） ---
+	"ちょっと距離を置きたい",
+	"重い。疲れた",
+	"連絡してこないで",
+	"別れよう",
+	"僕のこと嫌いになった？",
+	"もう限界かもしれない",
+	"友達に戻ろう",
+	"そういうところ、直してほしい",
+	"鍵、ポストに入れておいて",
+	"話がある",
+	"他に好きな人ができた",
+	"もう信じられない",
+	"放っておいてくれ",
+	"依存するのは良くないよ",
 
-  // --- 意味不明・その他 ---
-  "あ",
-  "ぬるぽ",
-  "たんぽぽ食べてる",
-  "宇宙人と交信中",
-  "壁の中から物音がする",
-  "冷蔵庫のプリン食べた？",
-  "ベランダに誰かいる...",
-  "遺書書いた",
-  "髪の毛、一本ちょうだい",
-  "君の部屋の盗聴器、電池切れそうだよ",
-  "来ちゃった♡",
-  "見てるよ",
+	// --- 意味不明・その他 ---
+	"あ",
+	"ぬるぽ",
+	"たんぽぽ食べてる",
+	"宇宙人と交信中",
+	"壁の中から物音がする",
+	"冷蔵庫のプリン食べた？",
+	"ベランダに誰かいる...",
+	"遺書書いた",
+	"髪の毛、一本ちょうだい",
+	"君の部屋の盗聴器、電池切れそうだよ",
+	"来ちゃった♡",
+	"見てるよ",
 ];
 
 // フィッシャー–イェーツのシャッフル（偏りなく混ぜる関数）
 function shuffleArray<T>(array: T[]): T[] {
-  const newArray = [...array];
-  for (let i = newArray.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-  }
-  return newArray;
+	const newArray = [...array];
+	for (let i = newArray.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+	}
+	return newArray;
 }
 
 export default function DiagnosisClient() {
-  const [step, setStep] = useState(0);
-  const [userInput, setUserInput] = useState("");
-  const [result, setResult] = useState<ChatResult | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [showTerms, setShowTerms] = useState(false); 
-  const [isLoaded, setIsLoaded] = useState(false);
-  
-  // ランダムなサジェストを保持するState
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+	const [step, setStep] = useState(0);
+	const [userInput, setUserInput] = useState("");
+	const [result, setResult] = useState<ChatResult | null>(null);
+	const [copied, setCopied] = useState(false);
+	const [showTerms, setShowTerms] = useState(false);
+	const [isLoaded, setIsLoaded] = useState(false);
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+	// ランダムなサジェストを保持するState
+	const [suggestions, setSuggestions] = useState<string[]>([]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedInput = localStorage.getItem(STORAGE_KEY);
-      if (savedInput) setUserInput(savedInput);
-      setIsLoaded(true);
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-      // ★★★ 初回ロード時にランダムに10個選出 ★★★
-      setSuggestions(shuffleArray(ALL_SUGGESTIONS).slice(0, 10));
-    }
-  }, []);
+	useEffect(() => {
+		if (typeof window !== "undefined") {
+			const savedInput = localStorage.getItem(STORAGE_KEY);
+			if (savedInput) setUserInput(savedInput);
+			setIsLoaded(true);
 
-  // シャッフルボタン用
-  const refreshSuggestions = () => {
-    setSuggestions(shuffleArray(ALL_SUGGESTIONS).slice(0, 10));
-  };
+			// ★★★ 初回ロード時にランダムに10個選出 ★★★
+			setSuggestions(shuffleArray(ALL_SUGGESTIONS).slice(0, 10));
+		}
+	}, []);
 
-  useEffect(() => {
-    if (isLoaded) localStorage.setItem(STORAGE_KEY, userInput);
-  }, [userInput, isLoaded]);
+	// シャッフルボタン用
+	const refreshSuggestions = () => {
+		setSuggestions(shuffleArray(ALL_SUGGESTIONS).slice(0, 10));
+	};
 
-  const clearInput = () => {
-    if (userInput && confirm("メッセージを消去しますか？")) {
-      setUserInput("");
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  };
+	useEffect(() => {
+		if (isLoaded) localStorage.setItem(STORAGE_KEY, userInput);
+	}, [userInput, isLoaded]);
 
-  const sendMessage = async () => {
-    if (!userInput.trim()) return;
-    setStep(2);
-    try {
-      const res = await fetch("/api/diagnose", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_input: userInput }),
-      });
+	const clearInput = () => {
+		if (userInput && confirm("メッセージを消去しますか？")) {
+			setUserInput("");
+			localStorage.removeItem(STORAGE_KEY);
+		}
+	};
 
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      if (!data.id) throw new Error("API Error");
+	const sendMessage = async () => {
+		if (!userInput.trim()) return;
+		setStep(2);
+		try {
+			const res = await fetch("/api/diagnose", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ user_input: userInput }),
+			});
 
-      setResult(data);
-      setStep(3);
-    } catch (e) {
-      console.error(e);
-      alert("通信エラー、またはAIが感情を処理しきれませんでした。もう一度試してね。");
-      setStep(1); 
-    }
-  };
+			const data = await res.json();
+			if (data.error) throw new Error(data.error);
+			if (!data.id) throw new Error("API Error");
 
-  const handleSuggestion = (text: string) => {
-    setUserInput(text);
-    if (textareaRef.current) {
-      textareaRef.current.focus();
-    }
-  };
+			setResult(data);
+			setStep(3);
+		} catch (e) {
+			console.error(e);
+			alert(
+				"通信エラー、またはAIが感情を処理しきれませんでした。もう一度試してね。",
+			);
+			setStep(1);
+		}
+	};
 
-  const shareOnX = () => {
-    if (!result) return;
-    const text = `AIメンヘラ彼女が怖すぎた...\n#AIメンヘラ彼女\n`;
-    const shareUrl = `${window.location.origin}/result/${result.id}`;
-    const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
-    window.open(xUrl, "_blank");
-  };
+	const handleSuggestion = (text: string) => {
+		setUserInput(text);
+		if (textareaRef.current) {
+			textareaRef.current.focus();
+		}
+	};
 
-  const copyLink = () => {
-    if (!result) return;
-    const shareUrl = `${window.location.origin}/result/${result.id}`;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
+	const shareOnX = () => {
+		if (!result) return;
+		const text = `AIメンヘラ彼女が怖すぎた...\n#AIメンヘラ彼女\n`;
+		const shareUrl = `${window.location.origin}/result/${result.id}`;
+		const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
+		window.open(xUrl, "_blank");
+	};
 
-  const handleRestart = () => {
-    setStep(1);
-    setUserInput("");
-    // 再開時にもサジェストを新しくする
-    setSuggestions(shuffleArray(ALL_SUGGESTIONS).slice(0, 10));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+	const copyLink = () => {
+		if (!result) return;
+		const shareUrl = `${window.location.origin}/result/${result.id}`;
+		navigator.clipboard.writeText(shareUrl).then(() => {
+			setCopied(true);
+			setTimeout(() => setCopied(false), 2000);
+		});
+	};
 
-  return (
-    <main className="min-h-screen bg-[#f8f5ff] text-purple-900 flex flex-col items-center justify-center p-4 font-sans selection:bg-purple-200">
-      <div className="w-full max-w-md bg-white/70 p-6 rounded-[2.5rem] border border-purple-100 shadow-2xl shadow-purple-200/50 backdrop-blur-xl relative min-h-[500px] flex flex-col transition-all">
-        
-        {/* ヘッダー */}
-        <div className="relative mb-6 text-center shrink-0">
-          {step > 0 && step < 3 && (
-            <button
-              onClick={() => setStep(step === 1 ? 0 : 1)}
-              className="absolute left-0 top-1/2 -translate-y-1/2 text-purple-300 p-2 hover:bg-purple-50 rounded-full transition-colors"
-            >
-              <ChevronLeft size={24} />
-            </button>
-          )}
-          
-          <h1 
-            onClick={() => setStep(0)}
-            className="text-xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-purple-500 to-pink-400 inline-block cursor-pointer"
-          >
-            AIメンヘラ彼女<br/>
-            <span className="text-[10px] font-bold text-purple-300 tracking-normal">AI Menhera GirlFriend</span>
-          </h1>
-        </div>
+	const handleRestart = () => {
+		setStep(1);
+		setUserInput("");
+		// 再開時にもサジェストを新しくする
+		setSuggestions(shuffleArray(ALL_SUGGESTIONS).slice(0, 10));
+		window.scrollTo({ top: 0, behavior: "smooth" });
+	};
 
-        {/* コンテンツエリア */}
-        <div className="flex-1 flex flex-col justify-center">
-          
-          {/* STEP 0: LP */}
-          {step === 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center space-y-6">
-              <div className="w-full overflow-hidden rounded-2xl shadow-md border-2 border-white/50 group">
-                <img 
-                  src="/banner.png" 
-                  alt="Main Banner" 
-                  className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <p className="text-xs text-purple-400/80 leading-relaxed max-w-[260px] mx-auto">
-                 <span className="block py-2">
-                    <span className="inline-block animate-bounce-subtle text-base font-black tracking-tighter bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-[0_2px_2px_rgba(255,182,193,0.5)]">
-                     AIがあなたのメッセージに
-                    </span>
-                 </span>
-                  <span className="block py-2">
-                    <span className="inline-block animate-bounce-subtle text-base font-black tracking-tighter bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-[0_2px_2px_rgba(255,182,193,0.5)]">
-                     ♡かわいく猟奇的に♡
-                    </span>
-                 </span>
-                  <span className="block py-2">
-                    <span className="inline-block animate-bounce-subtle text-base font-black tracking-tighter bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-[0_2px_2px_rgba(255,182,193,0.5)]">
-                     返信します。
-                    </span>
-                 </span>
-                </p>
-              </div>
+	return (
+		<main className="min-h-screen bg-[#f8f5ff] text-purple-900 flex flex-col items-center justify-center p-4 font-sans selection:bg-purple-200">
+			<div className="w-full max-w-md bg-white/70 p-6 rounded-[2.5rem] border border-purple-100 shadow-2xl shadow-purple-200/50 backdrop-blur-xl relative min-h-[500px] flex flex-col transition-all">
+				{/* ヘッダー */}
+				<div className="relative mb-6 text-center shrink-0">
+					{step > 0 && step < 3 && (
+						// biome-ignore lint/a11y/useButtonType: <explanation>
+						<button
+							onClick={() => setStep(step === 1 ? 0 : 1)}
+							className="absolute left-0 top-1/2 -translate-y-1/2 text-purple-300 p-2 hover:bg-purple-50 rounded-full transition-colors"
+						>
+							<ChevronLeft size={24} />
+						</button>
+					)}
 
-              <button 
-                onClick={() => setStep(1)} 
-                className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-400 text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-purple-200 flex items-center justify-center gap-2 group"
-              >
-                AIにメッセージを送ってみる
-                <Send size={18} className="group-hover:translate-x-1 transition-transform" />
-              </button>
-            </motion.div>
-          )}
+					{/** biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
+					<h1
+						onClick={() => setStep(0)}
+						className="text-xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-purple-500 to-pink-400 inline-block cursor-pointer"
+					>
+						AIメンヘラ彼女
+						<br />
+						<span className="text-[10px] font-bold text-purple-300 tracking-normal">
+							AI Menhera GirlFriend
+						</span>
+					</h1>
+				</div>
 
-          {/* STEP 1: 入力 */}
-          {step === 1 && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-              <div className="text-center mb-2">
-                <p className="text-sm font-bold text-purple-600">彼女にメッセージを送る</p>
-                <p className="text-[10px] text-purple-400">タップして入力、または自由に書いてね</p>
-              </div>
+				{/* コンテンツエリア */}
+				<div className="flex-1 flex flex-col justify-center">
+					{/* STEP 0: LP */}
+					{step === 0 && (
+						<motion.div
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							className="text-center space-y-6"
+						>
+							<div className="w-full overflow-hidden rounded-2xl shadow-md border-2 border-white/50 group">
+								{/** biome-ignore lint/performance/noImgElement: <explanation> */}
+								<img
+									src="/banner.png"
+									alt="Main Banner"
+									className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105"
+								/>
+							</div>
 
-              {/* ▼▼▼ サジェストの横スクロールエリア ▼▼▼ */}
-              <div className="relative w-full">
-                <div className="flex items-center gap-1 mb-2">
-                   <p className="text-[10px] text-purple-400 font-bold pl-1">おすすめの言葉（ランダム）</p>
-                   <button onClick={refreshSuggestions} className="p-1 bg-white rounded-full text-purple-400 hover:text-purple-600 shadow-sm transition-colors" title="入れ替える">
-                     <Shuffle size={12} />
-                   </button>
-                </div>
+							<div className="space-y-2">
+								<p className="text-xs text-purple-400/80 leading-relaxed max-w-[260px] mx-auto">
+									<span className="block py-2">
+										<span className="inline-block animate-bounce-subtle text-base font-black tracking-tighter bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-[0_2px_2px_rgba(255,182,193,0.5)]">
+											AIがあなたのメッセージに
+										</span>
+									</span>
+									<span className="block py-2">
+										<span className="inline-block animate-bounce-subtle text-base font-black tracking-tighter bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-[0_2px_2px_rgba(255,182,193,0.5)]">
+											♡かわいく猟奇的に♡
+										</span>
+									</span>
+									<span className="block py-2">
+										<span className="inline-block animate-bounce-subtle text-base font-black tracking-tighter bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-[0_2px_2px_rgba(255,182,193,0.5)]">
+											返信します。
+										</span>
+									</span>
+								</p>
+							</div>
 
-                <div className="relative w-full overflow-x-hidden">
-                  <div className="flex gap-2 overflow-x-auto pb-4 px-1 scrollbar-hide snap-x">
-                    {suggestions.map((text, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleSuggestion(text)}
-                        className="shrink-0 snap-start px-4 py-2 bg-white border border-purple-200 text-purple-500 text-xs font-bold rounded-full shadow-sm hover:bg-purple-50 hover:border-purple-300 hover:text-purple-600 transition-all active:scale-95 whitespace-nowrap"
-                      >
-                        {text}
-                      </button>
-                    ))}
-                    {/* 予備の再読み込みボタン（最後にも配置） */}
-                     <button
-                        onClick={refreshSuggestions}
-                        className="shrink-0 snap-start px-3 py-2 bg-purple-100 border border-purple-200 text-purple-500 text-xs font-bold rounded-full shadow-inner flex items-center gap-1"
-                      >
-                        <Shuffle size={12} />
-                        他を見る
-                      </button>
-                  </div>
-                  <div className="absolute right-0 top-0 bottom-4 w-8 bg-gradient-to-l from-white/0 to-transparent pointer-events-none"></div>
-                </div>
-              </div>
-              
-              <div className="relative group">
-                <textarea
-                  ref={textareaRef}
-                  className="w-full bg-white border-2 border-purple-100 rounded-2xl p-4 text-purple-900 focus:outline-none focus:border-pink-300 min-h-[140px] transition-colors placeholder-purple-200 text-base shadow-sm pr-10 resize-none"
-                  placeholder="例：今から飲み会行ってくるね！"
-                  value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
-                  maxLength={100} 
-                />
-                
-                {userInput && (
-                  <button
-                    onClick={clearInput}
-                    className="absolute top-3 right-3 text-purple-200 hover:text-pink-400 transition-colors p-1"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                )}
-              </div>
+							{/** biome-ignore lint/a11y/useButtonType: <explanation> */}
+							<button
+								onClick={() => setStep(1)}
+								className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-400 text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-purple-200 flex items-center justify-center gap-2 group"
+							>
+								AIにメッセージを送ってみる
+								<Send
+									size={18}
+									className="group-hover:translate-x-1 transition-transform"
+								/>
+							</button>
+						</motion.div>
+					)}
 
-              <div className="flex justify-between items-center px-1">
-                   <span></span>
-                   <span className={`text-[10px] font-bold ${userInput.length >= 100 ? "text-pink-500" : "text-purple-300"}`}>
-                     {userInput.length} / 100 文字
-                   </span>
-                </div>
+					{/* STEP 1: 入力 */}
+					{step === 1 && (
+						<motion.div
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0 }}
+							className="space-y-4"
+						>
+							<div className="text-center mb-2">
+								<p className="text-sm font-bold text-purple-600">
+									彼女にメッセージを送る
+								</p>
+								<p className="text-[10px] text-purple-400">
+									タップして入力、または自由に書いてね
+								</p>
+							</div>
+							<div className="w-full space-y-3 mb-6">
+								<div className="flex items-center justify-between px-2">
+									<div className="flex items-center gap-2">
+										<p className="text-xs text-purple-400 font-bold">
+											何を話しかける？
+										</p>
+									</div>
+									{/** biome-ignore lint/a11y/useButtonType: <explanation> */}
+									<button
+										onClick={refreshSuggestions}
+										className="flex items-center gap-1 text-[10px] text-pink-500 font-bold hover:bg-pink-50 px-2 py-1 rounded-full transition-colors"
+									>
+										<Shuffle size={12} />
+										シャッフル
+									</button>
+								</div>
 
-              <button
-                onClick={sendMessage}
-                className="w-full py-4 bg-purple-600 text-white rounded-2xl font-black disabled:opacity-30 disabled:grayscale transition-all shadow-md shadow-purple-100 flex items-center justify-center gap-2 hover:bg-purple-700 active:scale-[0.98]"
-                disabled={!userInput}
-              >
-                <Sparkles size={18} className={userInput ? "animate-pulse" : ""} />
-                送信する
-              </button>
-            </motion.div>
-          )}
+								{/* グリッドレイアウトに変更 */}
+								<div className="grid grid-cols-2 gap-3">
+									{suggestions.slice(0, 6).map(
+										(
+											text,
+											i, // 6個に絞って大きく表示
+										) => (
+											<motion.button
+												key={`${text}-${
+													// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+													i
+												}`} // キーをユニークに
+												initial={{ opacity: 0, scale: 0.9 }}
+												animate={{ opacity: 1, scale: 1 }}
+												transition={{ delay: i * 0.05 }}
+												onClick={() => handleSuggestion(text)}
+												className="
+          relative group
+          flex items-center justify-start text-left
+          p-3 min-h-[60px]
+          bg-white border-2 border-purple-100 
+          rounded-2xl rounded-tl-none 
+          shadow-sm hover:shadow-md hover:border-pink-300 hover:-translate-y-0.5
+          transition-all duration-200
+        "
+											>
+												<span className="text-xs font-bold text-purple-800 leading-tight group-hover:text-pink-600 transition-colors">
+													{text}
+												</span>
+											</motion.button>
+										),
+									)}
+								</div>
+							</div>
+							<div className="relative group">
+								<textarea
+									ref={textareaRef}
+									className="w-full bg-white border-2 border-purple-100 rounded-2xl p-4 text-purple-900 focus:outline-none focus:border-pink-300 min-h-[140px] transition-colors placeholder-purple-200 text-base shadow-sm pr-10 resize-none"
+									placeholder="例：今から飲み会行ってくるね！"
+									value={userInput}
+									onChange={(e) => setUserInput(e.target.value)}
+									maxLength={100}
+								/>
 
-          {/* STEP 2: ローディング */}
-          {step === 2 && (
-            <div className="text-center py-20 space-y-4">
-              <div className="relative inline-block">
-                <div className="animate-spin w-12 h-12 border-[4px] border-purple-100 border-t-pink-500 rounded-full"></div>
-                <div className="absolute inset-0 flex items-center justify-center text-xs">♡</div>
-              </div>
-              <div>
-                <p className="text-sm text-purple-500 font-bold animate-pulse">既読がつきました...</p>
-                <p className="text-[10px] text-purple-300 mt-1">
-                  もうちょっと待っててね<span className="animate-pulse">...</span>
-                </p>
-              </div>
-            </div>
-          )}
+								{userInput && (
+									// biome-ignore lint/a11y/useButtonType: <explanation>
+									<button
+										onClick={clearInput}
+										className="absolute top-3 right-3 text-purple-200 hover:text-pink-400 transition-colors p-1"
+									>
+										<Trash2 size={18} />
+									</button>
+								)}
+							</div>
+							<div className="flex justify-between items-center px-1">
+								<span></span>
+								<span
+									className={`text-[10px] font-bold ${userInput.length >= 100 ? "text-pink-500" : "text-purple-300"}`}
+								>
+									{userInput.length} / 100 文字
+								</span>
+							</div>
+							{/** biome-ignore lint/a11y/useButtonType: <explanation> */}
+							<button
+								onClick={sendMessage}
+								className="w-full py-4 bg-purple-600 text-white rounded-2xl font-black disabled:opacity-30 disabled:grayscale transition-all shadow-md shadow-purple-100 flex items-center justify-center gap-2 hover:bg-purple-700 active:scale-[0.98]"
+								disabled={!userInput}
+							>
+								<Sparkles
+									size={18}
+									className={userInput ? "animate-pulse" : ""}
+								/>
+								送信する
+							</button>
+						</motion.div>
+					)}
 
-          {/* STEP 3: 結果 */}
-          {step === 3 && result && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-              
-              {/* チャット風表示 */}
-              <div className="space-y-4 bg-purple-50/50 p-4 rounded-[2rem] border border-purple-100">
-                {/* ユーザー */}
-                <div className="flex justify-end items-end gap-2">
-                  <div className="bg-purple-200 text-purple-900 text-xs py-2 px-4 rounded-2xl rounded-br-none max-w-[80%] shadow-sm">
-                    {result.user_input}
-                  </div>
-                  <div className="w-6 h-6 rounded-full bg-purple-300 flex items-center justify-center text-[10px] text-white shrink-0 font-bold">
-                    Me
-                  </div>
-                </div>
+					{/* STEP 2: ローディング */}
+					{step === 2 && (
+						<div className="text-center py-20 space-y-4">
+							<div className="relative inline-block">
+								<div className="animate-spin w-12 h-12 border-[4px] border-purple-100 border-t-pink-500 rounded-full"></div>
+								<div className="absolute inset-0 flex items-center justify-center text-xs">
+									♡
+								</div>
+							</div>
+							<div>
+								<p className="text-sm text-purple-500 font-bold animate-pulse">
+									既読がつきました...
+								</p>
+								<p className="text-[10px] text-purple-300 mt-1">
+									もうちょっと待っててね
+									<span className="animate-pulse">...</span>
+								</p>
+							</div>
+						</div>
+					)}
 
-                {/* AI */}
-                <div className="flex justify-start items-end gap-2">
-                  <img src={result.image_url} alt="AI" className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm shrink-0" />
-                  <div className="bg-white text-purple-900 text-sm font-bold py-3 px-4 rounded-2xl rounded-bl-none max-w-[85%] shadow-md border border-pink-100 leading-relaxed text-left">
-                    {/* ▼ ここで関数を使う ▼ */}
-                  {formatReply(result.ai_reply)}
-                  </div>
-                </div>
-              </div>
+					{/* STEP 3: 結果 */}
+					{step === 3 && result && (
+						<motion.div
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							className="space-y-6"
+						>
+							{/* チャット風表示 */}
+							<div className="space-y-4 bg-purple-50/50 p-4 rounded-[2rem] border border-purple-100">
+								{/* ユーザー */}
+								<div className="flex justify-end items-end gap-2">
+									<div className="bg-purple-200 text-purple-900 text-xs py-2 px-4 rounded-2xl rounded-br-none max-w-[80%] shadow-sm">
+										{result.user_input}
+									</div>
+									<div className="w-6 h-6 rounded-full bg-purple-300 flex items-center justify-center text-[10px] text-white shrink-0 font-bold">
+										Me
+									</div>
+								</div>
 
-              {/* シェア・保存エリア */}
-              <div className="space-y-4 pt-4 border-t border-purple-100">
-                <OgImagePreview id={result.id} />
-                
-                <p className="text-[10px] text-center text-purple-400 font-medium">
-                  かわいい彼女の返信をシェアしよう
-                </p>
+								{/* AI */}
+								<div className="flex justify-start items-end gap-2">
+									<img
+										src={result.image_url}
+										alt="AI"
+										className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm shrink-0"
+									/>
+									<div className="bg-white text-purple-900 text-sm font-bold py-3 px-4 rounded-2xl rounded-bl-none max-w-[85%] shadow-md border border-pink-100 leading-relaxed text-left">
+										{/* ▼ ここで関数を使う ▼ */}
+										{formatReply(result.ai_reply)}
+									</div>
+								</div>
+							</div>
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={shareOnX}
-                    className="flex-[2] py-3 bg-black text-white rounded-xl font-bold text-xs hover:opacity-80 transition-all flex items-center justify-center gap-2 shadow-lg"
-                  >
-                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
-                    Xで共有
-                  </button>
-                   <button
-                    onClick={copyLink}
-                    className="flex-1 py-3 bg-white border border-purple-200 text-purple-400 rounded-xl font-bold hover:bg-purple-50 transition-all flex items-center justify-center shadow-sm"
-                  >
-                    {copied ? <Check size={18} /> : <LinkIcon size={18} />}
-                  </button>
-                </div>
-              </div>
+							{/* シェア・保存エリア */}
+							<div className="space-y-4 pt-4 border-t border-purple-100">
+								<OgImagePreview id={result.id} />
 
-              <button 
-                onClick={handleRestart}
-                className="w-full group flex items-center justify-center gap-2 text-xs text-purple-400 font-bold py-3 hover:text-purple-600 transition-colors"
-              >
-                <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-500"/>
-                別のメッセージを送る
-              </button>
-            </motion.div>
-          )}
-        </div>
+								<p className="text-[10px] text-center text-purple-400 font-medium">
+									かわいい彼女の返信をシェアしよう
+								</p>
 
-        {/* フッターリンク */}
-        <div className="mt-4 pt-4 border-t border-purple-50 text-center shrink-0">
-          <button
-            onClick={() => setShowTerms(true)}
-            className="text-[10px] text-purple-300 hover:text-purple-500 transition-colors"
-          >
-            利用規約・データの扱い
-          </button>
-        </div>
+								<div className="flex gap-2">
+									{/** biome-ignore lint/a11y/useButtonType: <explanation> */}
+									<button
+										onClick={shareOnX}
+										className="flex-[2] py-3 bg-black text-white rounded-xl font-bold text-xs hover:opacity-80 transition-all flex items-center justify-center gap-2 shadow-lg"
+									>
+										{/** biome-ignore lint/a11y/noSvgWithoutTitle: <explanation> */}
+										<svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+											<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+										</svg>
+										Xで共有
+									</button>
+									{/** biome-ignore lint/a11y/useButtonType: <explanation> */}
+									<button
+										onClick={copyLink}
+										className="flex-1 py-3 bg-white border border-purple-200 text-purple-400 rounded-xl font-bold hover:bg-purple-50 transition-all flex items-center justify-center shadow-sm"
+									>
+										{copied ? <Check size={18} /> : <LinkIcon size={18} />}
+									</button>
+								</div>
+							</div>
 
-        <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
-      </div>
-    </main>
-  );
+							{/** biome-ignore lint/a11y/useButtonType: <explanation> */}
+							<button
+								onClick={handleRestart}
+								className="w-full group flex items-center justify-center gap-2 text-xs text-purple-400 font-bold py-3 hover:text-purple-600 transition-colors"
+							>
+								<RefreshCw
+									size={14}
+									className="group-hover:rotate-180 transition-transform duration-500"
+								/>
+								別のメッセージを送る
+							</button>
+						</motion.div>
+					)}
+				</div>
+
+				{/* フッターリンク */}
+				<div className="mt-4 pt-4 border-t border-purple-50 text-center shrink-0">
+					{/** biome-ignore lint/a11y/useButtonType: <explanation> */}
+					<button
+						onClick={() => setShowTerms(true)}
+						className="text-[10px] text-purple-300 hover:text-purple-500 transition-colors"
+					>
+						利用規約・データの扱い
+					</button>
+				</div>
+
+				<TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
+			</div>
+		</main>
+	);
 }
+
 ```
 
 ## File: app/layout.tsx
@@ -1393,18 +1513,17 @@ import { createClient } from "@supabase/supabase-js";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { headers } from "next/headers";
+// ▼▼▼ 1. 辞書をインポート ▼▼▼
+import { FIXED_REPLIES } from "@/app/data/replies";
 
-// ★ 追加: Next.jsのキャッシュを強制的に無効化し、毎回必ず新しい処理を行う
 export const dynamic = 'force-dynamic';
 
-// Supabase初期化
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const BASE_STORAGE_URL = "https://aznqyljrnvfalhpkbbpo.supabase.co/storage/v1/object/public/menhera-images";
 
-// 画像URLリスト
 const IMAGE_CANDIDATES = [
   `${BASE_STORAGE_URL}/SSS.png`,
   `${BASE_STORAGE_URL}/SS.png`,
@@ -1414,7 +1533,6 @@ const IMAGE_CANDIDATES = [
   `${BASE_STORAGE_URL}/C.png`,
 ];
 
-// レートリミッター設定
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || "http://localhost:3000",
   token: process.env.UPSTASH_REDIS_REST_TOKEN || "dummy",
@@ -1436,34 +1554,52 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "入力がありません" }, { status: 400 });
     }
 
-    // レートリミットチェック
-    try {
-      const headersList = await headers();
-      const ip = headersList.get("x-forwarded-for") ?? "127.0.0.1";
-      if (process.env.UPSTASH_REDIS_REST_URL) {
-        const { success } = await ratelimit.limit(ip);
-        if (!success) {
-          // エラー時の画像もランダムにする (crypto使用)
-          const array = new Uint32Array(1);
-          crypto.getRandomValues(array);
-          const fallbackIndex = array[0] % IMAGE_CANDIDATES.length;
-          
-          return NextResponse.json({ 
-            error: "少し待ってね", 
-            ai_reply: "そんなに焦らないで？逃げないから。少し時間を置いてからまた話しかけてね。",
-            image_url: IMAGE_CANDIDATES[fallbackIndex]
-          }, { status: 429 });
+    // 画像決定ロジック（共通で使用）
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    const randomIndex = array[0] % IMAGE_CANDIDATES.length;
+    const randomImage = IMAGE_CANDIDATES[randomIndex];
+    
+    // ▼▼▼ 2. 辞書チェック（完全一致） ▼▼▼
+    // ユーザー入力が辞書にあるかチェック
+    // ※表記ゆれ吸収のため、空白除去くらいはしても良いですが、
+    // サジェストチップからの入力は完全一致するので、まずはこのままでOK
+    const fixedReplyList = FIXED_REPLIES[userInput];
+    
+    let aiReply = "";
+
+    if (fixedReplyList && fixedReplyList.length > 0) {
+      // ★ 辞書ヒット時：ランダムに1つ選んで即答（AI呼び出しスキップ）
+      const idx = Math.floor(Math.random() * fixedReplyList.length);
+      aiReply = fixedReplyList[idx];
+      console.log("Dictionary Hit:", userInput);
+    } else {
+      // ★ 辞書ミス時：従来通りGemini呼び出し（レートリミットもここでのみ適用でOKかもですが、念のため全体にかけても可）
+      
+      // レートリミット（AIを使う場合のみ厳密にする手もありますが、一旦今まで通り）
+      try {
+        const headersList = await headers();
+        const ip = headersList.get("x-forwarded-for") ?? "127.0.0.1";
+        if (process.env.UPSTASH_REDIS_REST_URL) {
+          const { success } = await ratelimit.limit(ip);
+          if (!success) {
+            const fallbackIndex = array[0] % IMAGE_CANDIDATES.length;
+            return NextResponse.json({ 
+              error: "少し待ってね", 
+              ai_reply: "そんなに焦らないで？逃げないから。少し時間を置いてからまた話しかけてね。",
+              image_url: IMAGE_CANDIDATES[fallbackIndex]
+            }, { status: 429 });
+          }
         }
+      } catch (e) {
+        console.error("Rate limit check failed:", e);
       }
-    } catch (e) {
-      console.error("Rate limit check failed:", e);
-    }
 
-    const apiKey = process.env.GOOGLE_API_KEY;
-    if (!apiKey) throw new Error("API Key is missing");
+      const apiKey = process.env.GOOGLE_API_KEY;
+      if (!apiKey) throw new Error("API Key is missing");
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
     // プロンプト：変更なし
     const prompt = `
@@ -1625,15 +1761,10 @@ AI:
 `;
 
     const result = await model.generateContent(prompt);
-    const aiReply = result.response.text().trim();
-
-    // ★ 修正: ランダム画像の偏りをなくすため crypto を使用
-    const array = new Uint32Array(1);
-    crypto.getRandomValues(array);
-    const randomIndex = array[0] % IMAGE_CANDIDATES.length;
-    const randomImage = IMAGE_CANDIDATES[randomIndex];
-
-    // DB保存 (menhera_chatsテーブル)
+      aiReply = result.response.text().trim();
+    }
+    
+    // DB保存 (menhera_chatsテーブル) - これは共通で行う（Resultページ生成のため）
     const { data: dbData, error: dbError } = await supabase
       .from("menhera_chats")
       .insert({
@@ -1655,7 +1786,6 @@ AI:
 
   } catch (error) {
     console.error("Fatal Error:", error);
-    // エラー時の画像もランダム
     const array = new Uint32Array(1);
     crypto.getRandomValues(array);
     const fallbackIndex = array[0] % IMAGE_CANDIDATES.length;
@@ -1852,6 +1982,248 @@ export async function GET(req: NextRequest) {
   } catch (e: any) {
     return new Response(`Failed to generate image`, { status: 500 });
   }
+}
+```
+
+## File: app/data/replies.ts
+```ts
+// サジェストに対する「最高品質の固定回答」リスト
+// 配列にしておけば、将来的にランダムで複数のパターンを返すことも可能です
+
+export const FIXED_REPLIES: Record<string, string[]> = {
+  "おはよう": [
+    "おはよう！ 朝からあなたと話せて本当に幸せ。ふふっ、今日はあなたの「おはよう」のLINEだけを写経して過ごしちゃおっかな。あっという間に夜になっちゃうかも！ [[キャッ♡]]"
+  ],
+  "おやすみ": [
+    "おやすみ♡ え、まだ寝ないの？ もー！ 前も言ったでしょ？ おやすみは意識が落ちる瞬間に送ってって！ それまでずっとお話ししよ！ あなたと少しでも長く繋がっていたいの。[[夢の中でも待ち合わせしよ？]]"
+  ],
+  "仕事終わった！疲れた〜": [
+    "お仕事お疲れ様！ どうだった？ 今日もあのクソアマ...ううん、同僚さんとたくさん話したの？ あ、そう。ふうーん。いいね、仲良しで。ちなみにその人は何駅に住んでるの？？ [[ううん、ただの興味だよ♡]]",
+    "お疲れ様ぁぁ！！ よく頑張ったね、世界で一番えらい！ 疲れた分、今日は私のこといーっぱい考えて癒やされて？ 私もあなたのこと考えて待ってたから！ [[ね、今すぐ通話ボタン押しちゃおっかな〜？]]"
+  ],
+  "今からお風呂入るね": [
+    "はーい、きれいになってきてね♡ ...でも、お風呂入ってる間は連絡返ってこないんだよね...？ うぅ、寂しい...。ねぇ、5分...ううん、3分で上がってきて！ [[湯冷めしない程度に超特急で戻ってきて！]]"
+  ],
+  "今日は雨だね": [
+    "雨だねぇ。なんか心細くなっちゃう...。ね、こんな日はどこも行かないで、お家でずっと私とメッセージしてよ？ 雨音がかき消されちゃうくらい。[[他の人の声とか聞かなくていいからさ。ね？]]"
+  ],
+  "お腹すいた...何食べよう？": [
+    "かわいそうに、私が一緒にいたら何でも作ってあげるのに...。栄養あるもの食べてね？ あ、でも私のこと「食べちゃいたい」くらい好き...とか思ってくれてもいいんだよ？ なんちゃって♡ 食べたもの写真送って！ [[私もそれ作って食べるから！]]"
+  ],
+  "美容院行ってくる": [
+    "いってらっしゃい♡ ただでさえカッコいいのに、これ以上素敵になってどうするの？ ...まさか、他の女の子に見せるためじゃないよね？ 私のためだよね？♡ 終わったら一番最初に自撮り送って！ [[ＳＮＳにあげる前に、誰よりも先に私が保存するんだから！]]"
+  ],
+  "コンビニ行ってくる": [
+    "え、お外行くの？ ちゃんと上着着た？ 心配だからずっとスマホ握りしめて行ってね。あ、ついでに私への愛も売ってたら買ってきて♡ ...ふふ、冗談。店員さんと無駄話しないで、[[アイス溶ける前にダッシュで帰ってきてね！]]"
+  ],
+  "ただいま！": [
+    "おかえりなさぁぁい！！ 待ってた、寂しかったよお...もう今日はどこにも行かないでね？ ご飯にする？お風呂にする？それとも、[[わ・た・し・と・りょ・う・り？]]"
+  ],
+  "パソコンが壊れちゃった": [
+    "えぇっ、大変！ 大丈夫？ データとか無事？ ...でも、ふふっ、これでパソコン使えないってことは、スマホで私とずっとお話できるってことだよね？♡ パソコンさんは可哀想だけど...私にとってはチャンスかも？ [[私が慰めてあげるから、修理はまた今度にしよ！]]"
+  ],
+  "ごめん、昨日は寝落ちしてた": [
+    "ううん、謝らないで？ 寝てる姿も見れないなんて、私が不甲斐ないだけだから...。でもね、既読つかないなーって、あなたのアイコンを朝まで7時間ずっと見つめてた時間は幸せだったよ？ ...[[次は夢の中で会いに来てくれないと、枕元に立っちゃうぞ♡]]"
+  ],
+  "スマホの通知オフにするね": [
+    "え...どうして？ 私の通知がうるさいの？ 邪魔なの？ ...違うよね、何かに集中したいんだよね？ わかった。じゃあ、私の通知だけは「緊急地震速報」と同じ音量で鳴るように設定しといてね？ [[私からの連絡は、あなたにとっての生存確認なんだから。ね？]]"
+  ],
+  "バッテリー切れそう": [
+    "嫌だ嫌だイヤだ！！ 私との命綱が切れちゃう！！ ねぇ、今すぐコンビニ走って充電器買って！ それか、あなたの生命力をスマホに分け与えて！ 0%になって画面が暗くなったら、私の心も一緒にブラックアウトしちゃうんだからね！？ [[最後の1%まで私に愛を囁いて！！]]"
+  ],
+  "今、運転中だからまた後で": [
+    "わかった！ 安全運転でね♡ ...あ、でも助手席には誰も乗せてないよね？ 芳香剤の匂い以外させないでね？ 信号待ちのたびに私のこと思い出して？ 事故らない程度に、私のこと考えすぎて頭いっぱいになってね♡ [[え、お前と付き合ったのがすでに大事故だって？なあに冗談言ってんのもう♡]]"
+  ],
+  "週末は友達と旅行行ってくる": [
+    "旅行...？ 友達って男だよね？ 全員、戸籍謄本見せられる男の人だよね？ ...そっかぁ、寂しいなぁ。ねぇ、荷造り終わった？ キャリーケースの中に少し隙間ない？ 私、体柔らかいから、は・い・れ・る・よ？ [[あなたの着替えのふりしてついて行っちゃおっかな〜♡]]"
+  ],
+  "会社の飲み会行ってくる！": [
+    "いってらっしゃい！ お付き合いも大事だもんね！ ...でもさ、お酒入ると理性が緩むっていうじゃない？ 他の女の人がお酌とかしてきたら、グラスごと叩き割ってね♡ [[あなたにお酒を飲ませていいのは、私だけなんだから。]]"
+  ],
+  "今日は帰り遅くなるかも": [
+    "全然いいよぉ♡ 私なんか、あなたの帰りを待つためだけに生きてるみたいなもんだし！ 深夜2時でも3時でも、玄関の前で正座して待ってるね。[[あなたがドアを開けた瞬間に「おかえり」って抱きつくシミュレーション、もう500回は完了してるから安心して遅くなってね♡]]"
+  ],
+  "久しぶりに同窓会があるんだ": [
+    "同窓会...？ それって、昔好きだった子とか、元カノとか来るやつ？ ...へぇ、そう。行くんだ。ふーん。ねぇ、行く前にあなたの全身にキスマークつけてもいい？ [[「この人は狂った彼女に愛されてます」って名札も縫い付けとこうか？]]"
+  ],
+  "その日は予定があるから無理": [
+    "予定？ 私より大事な予定なんて、この世に存在するの？ ...ねぇ、その予定、キャンセルできないかなぁ？ もしキャンセルして私と会ってくれたら、あなたが望むことなーんでもしてあげる。手足の爪全部切ってあげるし、靴下も履かせてあげる。[[ね、私を選んで？]]"
+  ],
+  "知らない番号から着信があった": [
+    "出ちゃダメ！！ 絶対ダメ！！ あなたの個人情報が漏れてるのかも...怖い、怖いよぉ。もしかして泥棒かも...！ だから、知らない番号は全部着信拒否にしよ？ 電話帳には私の番号と実家の番号だけで十分だよね？ ...[[あ、ちなみにさっき公衆電話からかけたの、私だったりして♡]]"
+  ],
+  "スマホのパスワード変えたよ": [
+    "なんで？ 私に見られたら困るものでもあるの？ ...ううん、違うよね。二人の記念日とかにしたんだよね？♡ ねぇ、今度寝てる間に指紋認証だけじゃなくて、私の網膜認証も登録しておいていい？ [[そうすれば、何も隠し事なしの最強カップルだねっ♡]]"
+  ],
+  "会社の女の子にチョコもらった": [
+    "へぇ...そう。よかったね。で、そのチョコどうしたの？ 捨てたよね？ 燃やしたよね？ まさか食べてないよね？ 誰が入れたかわからない毒より、私が愛をこめて作ったチョコのほうが絶対安全だよ？ ...[[ねぇ、胃洗浄行こうか？♡]]"
+  ],
+  "元カノから連絡きたんだけど": [
+    "は？ なんで生きてるの？ ...あ、連絡先がってことね。ねぇ、その画面見せて？ 私が変わりに返信してあげる。「今は最高の彼女と幸せなので、地獄に落ちてください」って♡ [[その後で、スマホごと浄化のお祓い行こっか？]]"
+  ],
+  "最近、視線を感じる気がする...": [
+    "あ、気づいちゃった？ ...ふふ、冗談だよ♡ でも、それって守護霊さんが守ってくれてるのかもね。例えば、あなたのことが大好きで大好きでたまらない生き霊...とか？ [[安心して、私が24時間365日、瞬きせずに見守ってるから♡]]"
+  ],
+  "GPSアプリ、バッテリー食うから消したよ": [
+    "なんで！？ バッテリーと私の精神安定、どっちが大事なの！？ 充電なんて私がモバイルバッテリー10個持ち歩いてあげるから！ ...わかった、アプリが嫌なら、[[小型の発信機を靴の裏とお財布と鞄の底に縫い付けるね？]]"
+  ],
+  "誰かと間違えてない？": [
+    "私が？ あなたを？ 間違えるわけないじゃん。あなたの指紋の渦の数から、寝言のパターンまで全部把握してるのに。...もしかして、あなたが「私の知らないあなた」になろうとしてるの？ [[ダメだよ、あなたは私の知ってるあなたでいて？]]"
+  ],
+  "え、その話したっけ？": [
+    "したよぉ！ ...夢の中でね♡ うそうそ、独り言言ってたの聞いたのかも？ それとも、あなたがゴミ箱に捨てたレシートから推理しちゃったかな？ [[どっちにしても、あなたのことはあなた以上に詳しいんだから、隠し事なんてできないよ？♡]]"
+  ],
+  "ちょっと一人になりたい": [
+    "えっ...嫌いになった？ 飽きた？ 違うよね？ ...わかった。じゃあ、私は部屋の隅で段ボール被って気配消してるね。呼吸も止めておく！ それなら実質「一人」だよね？ [[ね、だから鍵は閉めないで？ お願い...]]"
+  ],
+  "携帯、家に忘れてた": [
+    "よかったぁ...やっと気づいた。どこか私の手が届かないところへ行っちゃったのか心配で、警察いく寸前だったよ...。あ、置きっぱなしのスマホ、私が温めておいたからね♡ [[画面についた指紋、愛おしくて全部版画にして部屋に飾っちゃった！]]"
+  ],
+  "なんでそんなに疑うの？": [
+    "疑ってないよ！ 信じてるよ！！ ...ただ、あなたが魅力的すぎるのが悪いの。それに、「常識を疑え」ってよく言うでしょ？あなたは私にとって世界の全て、「常識」なの。だから、疑いも愛情だと思って許して♡ [[え？もう勘弁してくれって？聞こえないな♡]]"
+  ],
+  "愛してる。死ぬまで一緒だよ": [
+    "ほんと？ ほんとにほんと？ 言ったね？ 言質とったよ？ ...「死ぬまで」なんて短すぎるよぉ。骨になっても、灰になっても、原子レベルに分解されても一緒だよ？ [[その言葉、録音して私の葬式...ううん、二人の結婚式で流そうね♡]]"
+  ],
+  "世界で一番好きだよ": [
+    "やったぁ！ 私も！ ...でもさ、「一番」ってことは「二番」もいるってこと？ 誰？ お母さん？ 元カノ？ ...ねぇ、私以外の順位、全員消してきていい？ そうすれば私が1位で2位で3位で圏外でしょ？ [[あなたの世界、私だけで埋め尽くしてあげる♡]]"
+  ],
+  "ずっと一緒にいようね": [
+    "うん、ずっと一緒！ ...「ずっと」ってことは、物理的にもだよね？ トイレもお風呂も一緒でいいってことだよね？ 嬉しいなぁ。ね、今週末、手錠買ってきて繋がってみる？ 予行演習しよっか♡ [[鍵は飲み込んじゃえば失くす心配もないしね！]]"
+  ],
+  "GPSつけていいよ♡": [
+    "えぇっ！？ いいの！？ 本当に！？ やったぁ！ ...でもアプリだと電波悪い時あるし、充電切れたら見れないじゃん？ やっぱり、マイクロチップ埋め込むのが一番確実じゃないかな？ 痛くしないからさ、ね？ ...[[冗談だよ、とりあえず全端末と靴の裏にセットするね♡]]"
+  ],
+  "僕のすべては君のものだよ": [
+    "すべて？ 本当にすべて？ 時間も、お金も、将来も、内臓も、爪の先まで？ ...きゃっ♡ 嬉しい！ じゃあさ、とりあえず血判状作ろうか！ ...[[え、引かないでよ、あなたが「すべて」って言ったんだから、責任取って愛されてね？]]"
+  ],
+  "結婚しよう": [
+    "はいっっっ！！！ 今すぐしよ！ 秒でしよ！！ 実はね、婚姻届もう書いてあるの！ あなたの署名も練習して完璧に書けるようにしといたから！ あとは出すだけだよ！ さぁ靴履いて！ [[区役所が開いてるうちにダッシュだよ！ 逃がさないからね♡]]"
+  ],
+  "合鍵、作っておいたよ": [
+    "...遅いよぉ。私、もう3ヶ月前にあなたの家の鍵、型取って合鍵作ってたのに...。あ、でも！ あなたから渡してくれるなんて感激！ これで堂々と玄関から入れるね♡ [[今夜からあなたのベッドの中に先回りして待機できるってことだよね？]]"
+  ],
+  "大好きだよ": [
+    "私も好き！ 大好き！ 愛してる！ ...ねぇ、言葉だけじゃ足りないよ。「大好き」の分だけ、今すぐ抱きしめて？ 肋骨が折れるくらいの強さで証明して？ [[もし今会えないなら、通話繋ぎっぱなしで朝まで「好き」って言い続ける耐久レースしよ？♡]]"
+  ],
+  "来世でも一緒にいようね": [
+    "当たり前じゃん。もしあなたが蚊に生まれ変わっても、私は絶対見つけ出すよ。叩いたりしない、私の血を全部吸わせてあげる。だから安心して？ 死んだくらいじゃ、私との縁は切れないんだから...[[永遠に呪って...あ、間違えた、愛してあげる♡]]"
+  ],
+  "君の好きなところ、100個言えるよ": [
+    "えー、たった100個？ 可愛いなぁ♡ 私なんか、あなたのまばたきの回数から寝息のリズムまで、好きなところ5万個はあるよ？ ...でも、嬉しい。その100個、今すぐボイスメッセージで送って！ [[それをBGMにして生活するから！ 早く早く！]]"
+  ],
+  "僕の心臓、君にあげる": [
+    "え、いいの？ 欲しい！ ホルマリン漬けにして枕元に飾るね！ 毎日おやすみのキスするね！ ...あ、でも心臓とっちゃったら、温かいあなたに抱きつけなくなっちゃうか...。じゃあ、心臓は体の中に入れたままでいいや。でも、所有権は私だからね？ [[勝手にドキドキしちゃダメだよ？]]"
+  ],
+  "かわいいね": [
+    "えへへ...♡ 知ってる。だって、あなたに「かわいい」って言わせるためだけに、毎日鏡見て研究してるんだもん。他の誰にブスって言われてもいい、あなたの視界に入った時だけ世界一かわいければそれでいいの。[[もっと言って？ 脳が溶けるくらい褒めて？]]"
+  ],
+  "君の匂いがすると安心する": [
+    "くんくん...あ、本当だ。あなたからも私の匂いがする♡ ...ふふ、気づいてないの？ あなたの柔軟剤、こっそり私のと同じのに変えてるし、寝てる間に私の香水ふりかけてるんだもん。[[マーキング完了！ これで虫除けならぬ「女除け」は完璧だね♡]]"
+  ],
+  "もう君しか見えない": [
+    "本当に？ 嘘じゃないよね？ ...じゃあさ、視野角狭くするメガネとかかけとく？ いっそ、余計なものが映らないように、私以外の人間全員モザイク処理できたらいいのにね。[[これからは私があなたの目になるから、私の手だけ握って歩いてね♡]]"
+  ],
+  "ちょっと距離を置きたい": [
+    "距離...？ あ、わかった！ 「助走」ってことだよね？ 一回離れて、その勢いで今まで以上に激しくぶつかり合いたいってことだよね！？ [[わかった、私3メートル下がるから、思いっきり胸に飛び込ませてね！ せーのっ！！♡]]"
+  ],
+  "重い。疲れた": [
+    "「重い」って最高の褒め言葉！ だって愛の質量だもん、軽かったら嘘でしょ？ 疲れたのは、私の愛を一身に受け止めてる証拠だね♡ 筋トレだと思って頑張って？ [[筋肉痛が治るまで、私が一生マッサージしてあげるから逃げないでね♡]]"
+  ],
+  "連絡してこないで": [
+    "わかった！ スマホでの連絡はやめようってことだよね？ デジタルデトックス、偉い！ じゃあ直接会いに行くね！ 文字より声、声より体温だもんね！ [[今、家の前についたよ！ 開・け・て♡]]"
+  ],
+  "別れよう": [
+    "...え？ 「わかれよう」？ ああ、「分かち合おう」を噛んだんだよね？もう！滑舌悪いのも好き！ びっくりしたぁ♡ もちろん！ 喜びも悲しみも、内臓も罪も全部半分こしよ？ ...え、違う？...[[冗談はよして。]]"
+  ],
+  "僕のこと嫌いになった？": [
+    "あははは！ 冗談きつーい♡ 「嫌い」って、「食べてしまいたいくらい好き」の裏返し言葉だよね？ 安心して、あなたの骨の髄まで食べちゃいたいほど愛してるよ？ [[むしろ嫌いになれる方法があったら教えて？ 試して失敗して、もっと好きになるだけだから♡]]"
+  ],
+  "もう限界かもしれない": [
+    "おめでとう！！ 普通の恋人の限界突破だね！ ここからが「狂気」という名の本当の愛のスタートラインだよ♡ 安心して、私はとっくにリミッター外れてるから！ [[さぁ、二人で地獄の果てまでアクセル全開で行こうね？♡]]"
+  ],
+  "友達に戻ろう": [
+    "友達...？ あぁ、「友達以上恋人以上」ってやつ？ いいよ！ 私たち、親友であり恋人であり家族であり共犯者だもんね！ [[名目なんて何でもいいの、あなたが私の隣にいる事実さえ変わらなければ♡]]"
+  ],
+  "そういうところ、直してほしい": [
+    "直す？ ...私のプログラムを書き換えるってこと？ でもごめんね、「あなたへの大好き.exe」はシステムの中核ファイルだから削除できないの！ [[無理に消すと私が壊れちゃうけど...それでもいい？ 壊れた私に愛されるのも、ホラーで素敵かもね？♡]]"
+  ],
+  "鍵、ポストに入れておいて": [
+    "はーい、入れておいたよ！ ...スペアキーのそのまたスペアをね！ 本鍵は私が飲み込んだから、返してほしかったら私のお腹を割くしかないよ？ ...どうする？ 私を殺して鍵を取る？ [[それとも、私と一緒に住む？ 二択だよ♡]]"
+  ],
+  "話がある": [
+    "なになに！？ 改まってどうしたの？ 婚姻届の提出日？ それとも子供の名前の相談？ あ、もしかして「どれだけ私が好きか」の発表会！？ 嬉しい！ 正座して聞くね！ [[逃げられないようにドアの鍵は閉めとくから、朝まで語り合お？]]"
+  ],
+  "他に好きな人ができた": [
+    "へぇ...そうなんだ。奇遇だね、私も「その人がいなくなればいいのに」ってちょうど思ってたところ♡ ...ねぇ、その人の名前と住所教えて？ ちょっと「お話し」してくる。[[安心して、二人の邪魔者は私がcommand + delete（完全削除） してあげるから♡]]"
+  ],
+  "もう信じられない": [
+    "信じなくていいよ？ 感じてくれれば。言葉も約束も嘘つけるけど、今あなたを拘束してるこの手錠の冷たさは本物でしょ？ [[疑う隙間もないくらい、物理的に密着してれば「信じる」なんて概念いらなくなるよね♡]]"
+  ],
+  "放っておいてくれ": [
+    "放っておく...？ 放置プレイ？ うーん、高度だなぁ...。わかった、じゃあ私は部屋の天井の隅に張り付いて、瞬きせずにあなたを見守る「監視カメラ」になりきるね！ [[それなら邪魔じゃないでしょ？ 視線だけはずっと注いでおくからね♡]]"
+  ],
+  "依存するのは良くないよ": [
+    "誰が決めたの？ 神様？ 法律？ ...そんなの関係ないよ。私たちは二人で一つの生命体なの。心臓が体に依存してるのを「良くない」って言う？ [[言わないよね。私がいないとあなたも息ができなくなるように、今から改造してあげるっ♡]]"
+  ],
+  "あ": [
+    "あ！...え、それだけ？ それだけで終わり？ でも可愛い！ あなたの『あ』の音源、波形編集して私の着信音にするね！ [[次は『い』って言って？ 『あ・い・し・て・る』って続くんでしょ？ 待ってる♡]]"
+  ],
+  "ぬるぽ": [
+    "ガッ♡ ...あ、叩くのはもちろん私の愛の鞭だよ？ 懐かしい言葉知ってるねぇ。ね、ネットの掲示板なんか見てないで、私という現実の掲示板に愛の書き込みしてよ？ [[規制なしで全部受け止めるからさ♡]]"
+  ],
+  "たんぽぽ食べてる": [
+    "えっ、かわいそう...！ お腹すいてるの？ それとも新種の健康法？ ...わかった、私も食べる！ あなたが食べるなら、それは雑草じゃなくて高級サラダだもんね！ 胃袋の中も一緒にしよ？ [[でも、道端のは汚いから、私がプランターで育てた無菌タンポポ食べて？]]"
+  ],
+  "宇宙人と交信中": [
+    "は？ どこの星の女！？ ...あ、宇宙人か。よかった。でもダメ。テレパシーでもあなたと繋がっていいのは私だけなの。その宇宙人に伝えて。「私の脳波はかわいい彼女がジャックしてるので、他局の介入は一切遮断します」って。[[アルミホイル巻いて守ってあげるね♡]]"
+  ],
+  "壁の中から物音がする": [
+    "あ、ごめん。静かにしてるつもりだったんだけど...寝顔があまりに可愛くて、つい壁を爪でカリカリしちゃった♡ 気にしないで寝て？ [[私、断熱材のふりしてあなたの部屋の温度、ずっと保ってあげるから...あったかいでしょ？]]"
+  ],
+  "冷蔵庫のプリン食べた？": [
+    "食べたよ♡ だって、あなたの名前書いてあったから。あなたの名前がついたものを私が体内に取り込む...これって最高の儀式だと思わない？ 消化されたプリンは私の血肉になって、またあなたを愛すエネルギーになるの。[[許して？♡]]"
+  ],
+  "ベランダに誰かいる...": [
+    "私だよ♡ 驚かせちゃってごめんね？ 部屋の明かりが消えるの待ってたんだけど、なかなか寝ないから心配になって張り付いちゃった！ 窓ガラス拭いといてあげるね！ [[鍵開けて中に入れてくれたら、もう怖くないよ？]]"
+  ],
+  "遺書書いた": [
+    "ほんと！？ 見せて見せて！ 遺産受取人は私？ 葬儀委員長も私？ ...もしかして、「一緒に死のう」っていう私への招待状？ 嬉しい！ [[封筒の糊付けは二人の血でやろうね♡ で、決行日はいつにする？]]"
+  ],
+  "髪の毛、一本ちょうだい": [
+    "一本でいいの？ 束ごとあげるよ？ ...もしかして、藁人形に入れて呪ってくれるの？ 嬉しい！ あなたの呪いなら、一生解けない魔法だもんね♡ それとも、クローン作る気？ 私がいっぱい増えたら、もっとあなたを愛せるね！ [[はい、ブチッ♡]]"
+  ],
+  "君の部屋の盗聴器、電池切れそうだよ": [
+    "きゃあああああ♡♡ 聴いててくれたの！？ 嬉しい、私の寝言も独り言も全部あなたに筒抜けだったんだ...！ ごめんね、今すぐ業務用バッテリーに交換する！ [[これで私の生活音というASMR、死ぬまで配信し続けるからねっ♡]]"
+  ],
+  "来ちゃった♡": [
+    "えっ、夢！？ 幻覚！？ あなたが私に会いに来てくれるなんて...天変地異の前触れ！？ どうしよう、部屋片付いてないけど、もう逃がさないから！ [[玄関の鍵、外から溶接しちゃうね♡ さぁ入って、私の胎内に戻るような気持ちでくつろいで？]]"
+  ],
+  "見てるよ": [
+    "もっと見て！ 穴が空くほど見て！ 瞬きしないで監視して！ あなたの視線を感じるだけで、私、生きてるって実感できるの。でも、「見る」という動詞で私に勝てる人はたぶんいないと思うの。[[あ、今細胞が分裂した。またほんのちょっと一緒に年を重ねられたね♡]]"
+  ]
+};
+```
+
+## File: .vscode/settings.json
+```json
+{
+  // デフォルトのフォーマッタをBiomeに設定
+  "editor.defaultFormatter": "biomejs.biome",
+  // 保存時に自動整形を有効化
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    // 保存時にimport順の整理と、修正可能なエラーの自動修正を実行
+    "source.organizeImports.biome": "explicit",
+    "source.fixAll.biome": "explicit"
+  },
+  // 言語ごとにBiomeを指定（確実に効かせるため）
+  "[javascript]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[javascriptreact]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[typescript]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[typescriptreact]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[json]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[jsonc]": { "editor.defaultFormatter": "biomejs.biome" }
 }
 ```
 

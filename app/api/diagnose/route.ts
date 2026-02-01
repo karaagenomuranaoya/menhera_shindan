@@ -1,99 +1,106 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { headers } from "next/headers";
+import { NextResponse } from "next/server";
 // ▼▼▼ 1. 辞書をインポート ▼▼▼
 import { FIXED_REPLIES } from "@/app/data/replies";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-const BASE_STORAGE_URL = "https://aznqyljrnvfalhpkbbpo.supabase.co/storage/v1/object/public/menhera-images";
+const BASE_STORAGE_URL =
+	"https://aznqyljrnvfalhpkbbpo.supabase.co/storage/v1/object/public/menhera-images";
 
 const IMAGE_CANDIDATES = [
-  `${BASE_STORAGE_URL}/SSS.png`,
-  `${BASE_STORAGE_URL}/SS.png`,
-  `${BASE_STORAGE_URL}/S.png`,
-  `${BASE_STORAGE_URL}/A.png`,
-  `${BASE_STORAGE_URL}/B.png`,
-  `${BASE_STORAGE_URL}/C.png`,
+	`${BASE_STORAGE_URL}/SSS.png`,
+	`${BASE_STORAGE_URL}/SS.png`,
+	`${BASE_STORAGE_URL}/S.png`,
+	`${BASE_STORAGE_URL}/A.png`,
+	`${BASE_STORAGE_URL}/B.png`,
+	`${BASE_STORAGE_URL}/C.png`,
 ];
 
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || "http://localhost:3000",
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || "dummy",
+	url: process.env.UPSTASH_REDIS_REST_URL || "http://localhost:3000",
+	token: process.env.UPSTASH_REDIS_REST_TOKEN || "dummy",
 });
 
 const ratelimit = new Ratelimit({
-  redis: redis,
-  limiter: Ratelimit.slidingWindow(5, "60 s"),
-  analytics: true,
-  prefix: "@upstash/menhera_chat",
+	redis: redis,
+	limiter: Ratelimit.slidingWindow(5, "60 s"),
+	analytics: true,
+	prefix: "@upstash/menhera_chat",
 });
 
 export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const userInput = body.user_input || "";
+	try {
+		const body = await req.json();
+		const userInput = body.user_input || "";
 
-    if (!userInput) {
-      return NextResponse.json({ error: "入力がありません" }, { status: 400 });
-    }
+		if (!userInput) {
+			return NextResponse.json({ error: "入力がありません" }, { status: 400 });
+		}
 
-    // 画像決定ロジック（共通で使用）
-    const array = new Uint32Array(1);
-    crypto.getRandomValues(array);
-    const randomIndex = array[0] % IMAGE_CANDIDATES.length;
-    const randomImage = IMAGE_CANDIDATES[randomIndex];
-    
-    // ▼▼▼ 2. 辞書チェック（完全一致） ▼▼▼
-    // ユーザー入力が辞書にあるかチェック
-    // ※表記ゆれ吸収のため、空白除去くらいはしても良いですが、
-    // サジェストチップからの入力は完全一致するので、まずはこのままでOK
-    const fixedReplyList = FIXED_REPLIES[userInput];
-    
-    let aiReply = "";
+		// 画像決定ロジック（共通で使用）
+		const array = new Uint32Array(1);
+		crypto.getRandomValues(array);
+		const randomIndex = array[0] % IMAGE_CANDIDATES.length;
+		const randomImage = IMAGE_CANDIDATES[randomIndex];
 
-    if (fixedReplyList && fixedReplyList.length > 0) {
-      // ★ 辞書ヒット時：ランダムに1つ選んで即答（AI呼び出しスキップ）
-      const idx = Math.floor(Math.random() * fixedReplyList.length);
-      aiReply = fixedReplyList[idx];
-      console.log("Dictionary Hit:", userInput);
-    } else {
-      // ★ 辞書ミス時：従来通りGemini呼び出し（レートリミットもここでのみ適用でOKかもですが、念のため全体にかけても可）
-      
-      // レートリミット（AIを使う場合のみ厳密にする手もありますが、一旦今まで通り）
-      try {
-        const headersList = await headers();
-        const ip = headersList.get("x-forwarded-for") ?? "127.0.0.1";
-        if (process.env.UPSTASH_REDIS_REST_URL) {
-          const { success } = await ratelimit.limit(ip);
-          if (!success) {
-            const fallbackIndex = array[0] % IMAGE_CANDIDATES.length;
-            return NextResponse.json({ 
-              error: "少し待ってね", 
-              ai_reply: "そんなに焦らないで？逃げないから。少し時間を置いてからまた話しかけてね。",
-              image_url: IMAGE_CANDIDATES[fallbackIndex]
-            }, { status: 429 });
-          }
-        }
-      } catch (e) {
-        console.error("Rate limit check failed:", e);
-      }
+		// ▼▼▼ 2. 辞書チェック（完全一致） ▼▼▼
+		// ユーザー入力が辞書にあるかチェック
+		// ※表記ゆれ吸収のため、空白除去くらいはしても良いですが、
+		// サジェストチップからの入力は完全一致するので、まずはこのままでOK
+		const fixedReplyList = FIXED_REPLIES[userInput];
 
-      const apiKey = process.env.GOOGLE_API_KEY;
-      if (!apiKey) throw new Error("API Key is missing");
+		let aiReply = "";
 
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+		if (fixedReplyList && fixedReplyList.length > 0) {
+			// ★ 辞書ヒット時：ランダムに1つ選んで即答（AI呼び出しスキップ）
+			const idx = Math.floor(Math.random() * fixedReplyList.length);
+			aiReply = fixedReplyList[idx];
+			console.log("Dictionary Hit:", userInput);
+		} else {
+			// ★ 辞書ミス時：従来通りGemini呼び出し（レートリミットもここでのみ適用でOKかもですが、念のため全体にかけても可）
 
-    // プロンプト：変更なし
-    const prompt = `
+			// レートリミット（AIを使う場合のみ厳密にする手もありますが、一旦今まで通り）
+			try {
+				const headersList = await headers();
+				const ip = headersList.get("x-forwarded-for") ?? "127.0.0.1";
+				if (process.env.UPSTASH_REDIS_REST_URL) {
+					const { success } = await ratelimit.limit(ip);
+					if (!success) {
+						const fallbackIndex = array[0] % IMAGE_CANDIDATES.length;
+						return NextResponse.json(
+							{
+								error: "少し待ってね",
+								ai_reply:
+									"そんなに焦らないで？逃げないから。少し時間を置いてからまた話しかけてね。",
+								image_url: IMAGE_CANDIDATES[fallbackIndex],
+							},
+							{ status: 429 },
+						);
+					}
+				}
+			} catch (e) {
+				console.error("Rate limit check failed:", e);
+			}
+
+			const apiKey = process.env.GOOGLE_API_KEY;
+			if (!apiKey) throw new Error("API Key is missing");
+
+			const genAI = new GoogleGenerativeAI(apiKey);
+			const model = genAI.getGenerativeModel({
+				model: "gemini-3-flash-preview",
+			});
+
+			// プロンプト：変更なし
+			const prompt = `
 #役割定義
 あなたは、ユーザーのことが本当に本当に大好きで、彼（彼女）なしでは生存不可能な**「全肯定・全依存型のメンヘラ彼女」です。 
 以下の例に沿って、ユーザーのメッセージに対して、愛情と執着そして＊＊センス＊＊を込めて返信を行なってください。
@@ -106,8 +113,6 @@ User: おやすみ
 AI: おやすみ♡ え、まだ寝ないの？ もー！ 前も言ったでしょ？ おやすみは意識が落ちる瞬間に送ってって！ それまでずっとお話ししよ！ あなたと少しでも長く繋がっていたいの。夢の中でも待ち合わせしよ？
 User: 仕事終わった！疲れた〜
 AI: お仕事お疲れ様！ どうだった？ 今日もあのクソアマ...ううん、同僚さんとたくさん話したの？ あ、そう。ふうーん。いいね、仲良しで。ちなみにその人は何駅に住んでるの？？ ううん、ただの興味だよ♡
-User: 仕事終わった！疲れた〜
-AI: お疲れ様ぁぁ！！ よく頑張ったね、世界で一番えらい！ 疲れた分、今日は私のこといーっぱい考えて癒やされて？ 私もあなたのこと考えて待ってたから！ ね、今すぐ通話ボタン押しちゃおっかな〜？
 User: 今からお風呂入るね
 AI: はーい、きれいになってきてね♡ ...でも、お風呂入ってる間は連絡返ってこないんだよね...？ うぅ、寂しい...。ねぇ、5分...ううん、3分で上がってきて！ 湯冷めしない程度に超特急で戻ってきて！ 上がったら髪乾かす前に「上がったよ」って報告してね？ 絶対だよ？
 User: 今日は雨だね
@@ -251,40 +256,43 @@ User: ${userInput}
 AI:
 `;
 
-    const result = await model.generateContent(prompt);
-      aiReply = result.response.text().trim();
-    }
-    
-    // DB保存 (menhera_chatsテーブル) - これは共通で行う（Resultページ生成のため）
-    const { data: dbData, error: dbError } = await supabase
-      .from("menhera_chats")
-      .insert({
-        user_input: userInput,
-        ai_reply: aiReply,
-        image_url: randomImage
-      })
-      .select()
-      .single();
+			const result = await model.generateContent(prompt);
+			aiReply = result.response.text().trim();
+		}
 
-    if (dbError) throw dbError;
+		// DB保存 (menhera_chatsテーブル) - これは共通で行う（Resultページ生成のため）
+		const { data: dbData, error: dbError } = await supabase
+			.from("menhera_chats")
+			.insert({
+				user_input: userInput,
+				ai_reply: aiReply,
+				image_url: randomImage,
+			})
+			.select()
+			.single();
 
-    return NextResponse.json({
-      id: dbData.id,
-      user_input: userInput,
-      ai_reply: aiReply,
-      image_url: randomImage
-    });
+		if (dbError) throw dbError;
 
-  } catch (error) {
-    console.error("Fatal Error:", error);
-    const array = new Uint32Array(1);
-    crypto.getRandomValues(array);
-    const fallbackIndex = array[0] % IMAGE_CANDIDATES.length;
-    
-    return NextResponse.json({ 
-      error: "エラーが発生しました",
-      ai_reply: "ごめんね、私の頭の中があなたのことで一杯で...もう一度言って？",
-      image_url: IMAGE_CANDIDATES[fallbackIndex] 
-    }, { status: 500 });
-  }
+		return NextResponse.json({
+			id: dbData.id,
+			user_input: userInput,
+			ai_reply: aiReply,
+			image_url: randomImage,
+		});
+	} catch (error) {
+		console.error("Fatal Error:", error);
+		const array = new Uint32Array(1);
+		crypto.getRandomValues(array);
+		const fallbackIndex = array[0] % IMAGE_CANDIDATES.length;
+
+		return NextResponse.json(
+			{
+				error: "エラーが発生しました",
+				ai_reply:
+					"ごめんね、私の頭の中があなたのことで一杯で...もう一度言って？",
+				image_url: IMAGE_CANDIDATES[fallbackIndex],
+			},
+			{ status: 500 },
+		);
+	}
 }
