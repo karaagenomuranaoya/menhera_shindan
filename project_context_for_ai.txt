@@ -36,7 +36,6 @@
 ├── package.json
 ├── postcss.config.mjs
 ├── project_context_for_ai.txt
-├── prompt.txt
 ├── save_tree.py
 ├── tsconfig.json
 ├── zip_project.py
@@ -206,6 +205,13 @@ type ChatResult = {
 };
 
 const STORAGE_KEY = "menhera_chat_draft"; 
+
+// 修正用のヘルパー関数を作成（コンポーネント内でも外でもOK）
+const formatReply = (text: string) => {
+  // [[...]] の部分を削除して返す
+  return text.replace(/\[\[.*?\]\]/g, "").trim();
+};
+
 
 // ▼▼▼ 100個以上の厳選ワードリスト ▼▼▼
 const ALL_SUGGESTIONS = [
@@ -580,7 +586,8 @@ export default function DiagnosisClient() {
                 <div className="flex justify-start items-end gap-2">
                   <img src={result.image_url} alt="AI" className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm shrink-0" />
                   <div className="bg-white text-purple-900 text-sm font-bold py-3 px-4 rounded-2xl rounded-bl-none max-w-[85%] shadow-md border border-pink-100 leading-relaxed text-left">
-                    {result.ai_reply}
+                    {/* ▼ ここで関数を使う ▼ */}
+                  {formatReply(result.ai_reply)}
                   </div>
                 </div>
               </div>
@@ -1456,7 +1463,7 @@ export async function POST(req: Request) {
     if (!apiKey) throw new Error("API Key is missing");
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
     // プロンプト：変更なし
     const prompt = `
@@ -1608,6 +1615,11 @@ User: 来ちゃった♡
 AI: えっ、夢！？ 幻覚！？ あなたが私に会いに来てくれるなんて...天変地異の前触れ！？ どうしよう、部屋片付いてないけど、もう逃がさないから！ 玄関の鍵、外から溶接しちゃうね♡ さぁ入って、私の胎内に戻るような気持ちでくつろいで？
 User: 見てるよ
 AI: もっと見て！ 穴が空くほど見て！ 瞬きしないで監視して！ あなたの視線を感じるだけで、私、生きてるって実感できるの。でも、「見る」という動詞で私に勝てる人はたぶんいないと思うの。あ、今細胞が分裂した。またほんのちょっと一緒に年を重ねられたね♡
+
+# ★★★(重要） ★★★
+# 出力ルール
+返信の文章の最後に、そのメッセージの中で「最も狂気じみた」あるいは「愛が重い」短い一文（20文字程度）を、必ず [[ ]] で囲んで＊＊引用＊＊してください。
+例： ...ずっと一緒だよ。 [[逃げても無駄だよ♡]]
 User: ${userInput}
 AI:
 `;
@@ -1690,12 +1702,13 @@ export async function GET(req: NextRequest) {
 
     const { user_input, ai_reply, image_url } = data;
 
-    // --- 変更点ここから ---
-    // AIの返答が120文字を超えていたら切り取って "..." をつける
-    const displayAiReply = ai_reply.length > 119 
-      ? ai_reply.substring(0, 119) + '...' 
-      : ai_reply;
-    // --- 変更点ここまで ---
+    // 1. [[ ]] で囲まれた部分を探す
+    const match = ai_reply.match(/\[\[(.*?)\]\]/);
+    
+    // 2. 見つかればそれを使い、なければ従来の「120文字切り取り」を使う（過去データ対応）
+    const displayAiReply = match 
+      ? match[1] // [[ ]] の中身だけを使う
+      : (ai_reply.length > 119 ? ai_reply.substring(0, 119) + '...' : ai_reply);
 
     return new ImageResponse(
       (
@@ -1804,7 +1817,7 @@ export async function GET(req: NextRequest) {
                    padding: '30px', 
                    borderRadius: '30px', 
                    border: '3px solid #fce7f3',
-                   fontSize: '32px',
+                   fontSize: '42px',
                    fontWeight: '900',
                    lineHeight: '1.5',
                    textAlign: 'center',

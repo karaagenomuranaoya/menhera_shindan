@@ -4,18 +4,17 @@ import { createClient } from "@supabase/supabase-js";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { headers } from "next/headers";
+// ▼▼▼ 1. 辞書をインポート ▼▼▼
+import { FIXED_REPLIES } from "@/app/data/replies";
 
-// ★ 追加: Next.jsのキャッシュを強制的に無効化し、毎回必ず新しい処理を行う
 export const dynamic = 'force-dynamic';
 
-// Supabase初期化
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const BASE_STORAGE_URL = "https://aznqyljrnvfalhpkbbpo.supabase.co/storage/v1/object/public/menhera-images";
 
-// 画像URLリスト
 const IMAGE_CANDIDATES = [
   `${BASE_STORAGE_URL}/SSS.png`,
   `${BASE_STORAGE_URL}/SS.png`,
@@ -25,7 +24,6 @@ const IMAGE_CANDIDATES = [
   `${BASE_STORAGE_URL}/C.png`,
 ];
 
-// レートリミッター設定
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || "http://localhost:3000",
   token: process.env.UPSTASH_REDIS_REST_TOKEN || "dummy",
@@ -47,34 +45,52 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "入力がありません" }, { status: 400 });
     }
 
-    // レートリミットチェック
-    try {
-      const headersList = await headers();
-      const ip = headersList.get("x-forwarded-for") ?? "127.0.0.1";
-      if (process.env.UPSTASH_REDIS_REST_URL) {
-        const { success } = await ratelimit.limit(ip);
-        if (!success) {
-          // エラー時の画像もランダムにする (crypto使用)
-          const array = new Uint32Array(1);
-          crypto.getRandomValues(array);
-          const fallbackIndex = array[0] % IMAGE_CANDIDATES.length;
-          
-          return NextResponse.json({ 
-            error: "少し待ってね", 
-            ai_reply: "そんなに焦らないで？逃げないから。少し時間を置いてからまた話しかけてね。",
-            image_url: IMAGE_CANDIDATES[fallbackIndex]
-          }, { status: 429 });
+    // 画像決定ロジック（共通で使用）
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    const randomIndex = array[0] % IMAGE_CANDIDATES.length;
+    const randomImage = IMAGE_CANDIDATES[randomIndex];
+    
+    // ▼▼▼ 2. 辞書チェック（完全一致） ▼▼▼
+    // ユーザー入力が辞書にあるかチェック
+    // ※表記ゆれ吸収のため、空白除去くらいはしても良いですが、
+    // サジェストチップからの入力は完全一致するので、まずはこのままでOK
+    const fixedReplyList = FIXED_REPLIES[userInput];
+    
+    let aiReply = "";
+
+    if (fixedReplyList && fixedReplyList.length > 0) {
+      // ★ 辞書ヒット時：ランダムに1つ選んで即答（AI呼び出しスキップ）
+      const idx = Math.floor(Math.random() * fixedReplyList.length);
+      aiReply = fixedReplyList[idx];
+      console.log("Dictionary Hit:", userInput);
+    } else {
+      // ★ 辞書ミス時：従来通りGemini呼び出し（レートリミットもここでのみ適用でOKかもですが、念のため全体にかけても可）
+      
+      // レートリミット（AIを使う場合のみ厳密にする手もありますが、一旦今まで通り）
+      try {
+        const headersList = await headers();
+        const ip = headersList.get("x-forwarded-for") ?? "127.0.0.1";
+        if (process.env.UPSTASH_REDIS_REST_URL) {
+          const { success } = await ratelimit.limit(ip);
+          if (!success) {
+            const fallbackIndex = array[0] % IMAGE_CANDIDATES.length;
+            return NextResponse.json({ 
+              error: "少し待ってね", 
+              ai_reply: "そんなに焦らないで？逃げないから。少し時間を置いてからまた話しかけてね。",
+              image_url: IMAGE_CANDIDATES[fallbackIndex]
+            }, { status: 429 });
+          }
         }
+      } catch (e) {
+        console.error("Rate limit check failed:", e);
       }
-    } catch (e) {
-      console.error("Rate limit check failed:", e);
-    }
 
-    const apiKey = process.env.GOOGLE_API_KEY;
-    if (!apiKey) throw new Error("API Key is missing");
+      const apiKey = process.env.GOOGLE_API_KEY;
+      if (!apiKey) throw new Error("API Key is missing");
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
     // プロンプト：変更なし
     const prompt = `
@@ -236,15 +252,10 @@ AI:
 `;
 
     const result = await model.generateContent(prompt);
-    const aiReply = result.response.text().trim();
-
-    // ★ 修正: ランダム画像の偏りをなくすため crypto を使用
-    const array = new Uint32Array(1);
-    crypto.getRandomValues(array);
-    const randomIndex = array[0] % IMAGE_CANDIDATES.length;
-    const randomImage = IMAGE_CANDIDATES[randomIndex];
-
-    // DB保存 (menhera_chatsテーブル)
+      aiReply = result.response.text().trim();
+    }
+    
+    // DB保存 (menhera_chatsテーブル) - これは共通で行う（Resultページ生成のため）
     const { data: dbData, error: dbError } = await supabase
       .from("menhera_chats")
       .insert({
@@ -266,7 +277,6 @@ AI:
 
   } catch (error) {
     console.error("Fatal Error:", error);
-    // エラー時の画像もランダム
     const array = new Uint32Array(1);
     crypto.getRandomValues(array);
     const fallbackIndex = array[0] % IMAGE_CANDIDATES.length;
