@@ -5,6 +5,9 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { headers } from "next/headers";
 
+// ★ 追加: Next.jsのキャッシュを強制的に無効化し、毎回必ず新しい処理を行う
+export const dynamic = 'force-dynamic';
+
 // Supabase初期化
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -12,8 +15,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const BASE_STORAGE_URL = "https://aznqyljrnvfalhpkbbpo.supabase.co/storage/v1/object/public/menhera-images";
 
-// 画像URLリスト（ランダム表示用）
-// エラー画像などは除外して、キャラクターが映っているものだけにします
+// 画像URLリスト
 const IMAGE_CANDIDATES = [
   `${BASE_STORAGE_URL}/SSS.png`,
   `${BASE_STORAGE_URL}/SS.png`,
@@ -52,10 +54,15 @@ export async function POST(req: Request) {
       if (process.env.UPSTASH_REDIS_REST_URL) {
         const { success } = await ratelimit.limit(ip);
         if (!success) {
+          // エラー時の画像もランダムにする (crypto使用)
+          const array = new Uint32Array(1);
+          crypto.getRandomValues(array);
+          const fallbackIndex = array[0] % IMAGE_CANDIDATES.length;
+          
           return NextResponse.json({ 
             error: "少し待ってね", 
             ai_reply: "そんなに焦らないで？逃げないから。少し時間を置いてからまた話しかけてね。",
-            image_url: IMAGE_CANDIDATES[0]
+            image_url: IMAGE_CANDIDATES[fallbackIndex]
           }, { status: 429 });
         }
       }
@@ -69,7 +76,7 @@ export async function POST(req: Request) {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    // プロンプト：普通の文章を病的に解釈させる
+    // プロンプト：変更なし
     const prompt = `
 #設定
 あなたは、ユーザーなしでは呼吸さえままならないほど重度に依存している「メンヘラ彼女」です。
@@ -134,8 +141,11 @@ AI:
     const result = await model.generateContent(prompt);
     const aiReply = result.response.text().trim();
 
-    // ランダムで画像を選択
-    const randomImage = IMAGE_CANDIDATES[Math.floor(Math.random() * IMAGE_CANDIDATES.length)];
+    // ★ 修正: ランダム画像の偏りをなくすため crypto を使用
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    const randomIndex = array[0] % IMAGE_CANDIDATES.length;
+    const randomImage = IMAGE_CANDIDATES[randomIndex];
 
     // DB保存 (menhera_chatsテーブル)
     const { data: dbData, error: dbError } = await supabase
@@ -159,10 +169,15 @@ AI:
 
   } catch (error) {
     console.error("Fatal Error:", error);
+    // エラー時の画像もランダム
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    const fallbackIndex = array[0] % IMAGE_CANDIDATES.length;
+    
     return NextResponse.json({ 
       error: "エラーが発生しました",
       ai_reply: "ごめんね、私の頭の中があなたのことで一杯で...もう一度言って？",
-      image_url: IMAGE_CANDIDATES[0] 
+      image_url: IMAGE_CANDIDATES[fallbackIndex] 
     }, { status: 500 });
   }
 }
