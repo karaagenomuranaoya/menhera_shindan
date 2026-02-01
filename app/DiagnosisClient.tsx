@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, Link as LinkIcon, Check, ChevronLeft, Send, Sparkles, RefreshCw } from "lucide-react";
+import { Trash2, Link as LinkIcon, Check, ChevronLeft, Send, Sparkles, RefreshCw, Shuffle } from "lucide-react";
 import OgImagePreview from "./components/OgImagePreview";
 import TermsModal from "./components/TermsModal";
 
@@ -12,21 +12,143 @@ type ChatResult = {
   image_url: string;
 };
 
-// ▼ 追加: 面白い選択肢リスト
-const SUGGESTIONS = [
-  "今から会社の飲み会行ってくる！",
-  "ごめん、昨日は寝落ちしてた...",
-  "スマホのパスワード変えたよ",
-  "最近、視線を感じる気がする...",
-  "会社の女の子にチョコもらった",
-  "ちょっと距離を置きたい",
-  "GPSアプリ入れておいたよ♡",
-  "鍵、ポストに入れておいて",
-  "愛してる。死ぬまで一緒だよ",
+const STORAGE_KEY = "menhera_chat_draft"; 
+
+// ▼▼▼ 100個以上の厳選ワードリスト ▼▼▼
+const ALL_SUGGESTIONS = [
+  // --- 基本・日常 ---
+  "おはよう。今起きたよ",
+  "おやすみ、先に寝るね",
+  "仕事終わった！疲れた〜",
+  "今からお風呂入るね",
+  "今日は雨だね",
+  "お腹すいた...何食べよう？",
+  "美容院行ってくる",
+  "コンビニ行ってくる",
+  "ただいま！",
+  "明日早いからもう寝るね",
+
+  // --- 疑惑・地雷（軽） ---
+  "ごめん、昨日は寝落ちしてた",
+  "スマホの通知オフにするね",
+  "バッテリー切れそう",
+  "今、運転中だからまた後で",
+  "週末は友達と旅行行ってくる",
+  "会社の飲み会行ってくる！",
+  "今日は帰り遅くなるかも",
+  "久しぶりに同窓会があるんだ",
+  "その日は予定があるから無理",
   "知らない番号から着信があった",
+
+  // --- 疑惑・地雷（重） ---
+  "スマホのパスワード変えたよ",
+  "会社の女の子にチョコもらった",
+  "元カノから連絡きたんだけど",
+  "最近、視線を感じる気がする...",
+  "GPSアプリ、バッテリー食うから消したよ",
+  "誰かと間違えてない？",
+  "え、その話したっけ？",
+  "ちょっと一人になりたい",
+  "携帯、家に忘れてた",
+  "なんでそんなに疑うの？",
+
+  // --- 愛情・激重 ---
+  "愛してる。死ぬまで一緒だよ",
+  "世界で一番好きだよ",
+  "ずっと一緒にいようね",
+  "君がいないと生きていけない",
+  "GPSつけていいよ♡",
+  "僕のすべては君のものだよ",
+  "結婚しよう",
+  "合鍵、作っておいたよ",
+  "君以外の女の子は全員ブロックした",
+  "来世でも一緒にいようね",
+  "君の好きなところ、100個言えるよ",
+  "僕の心臓、君にあげる",
+  "24時間ビデオ通話繋いでおく？",
+  "君の匂いがすると安心する",
+  "もう君しか見えない",
+
+  // --- 拒絶・冷淡（危険） ---
+  "ちょっと距離を置きたい",
+  "重い。疲れた",
+  "連絡してこないで",
+  "別れよう",
+  "僕のこと嫌いになった？",
+  "もう限界かもしれない",
+  "友達に戻ろう",
+  "そういうところ、直してほしい",
+  "鍵、ポストに入れておいて",
+  "話がある",
+  "私のこと、本当に好き？",
+  "他に好きな人ができた",
+  "もう信じられない",
+  "放っておいてくれ",
+  "依存するのは良くないよ",
+
+  // --- 意味不明・その他 ---
+  "あ",
+  "ぬるぽ",
+  "たんぽぽ食べてる",
+  "宇宙人と交信中",
+  "今、後ろにいるよ",
+  "壁の中から物音がする",
+  "冷蔵庫のプリン食べた？",
+  "ベランダに誰かいる...",
+  "遺書書いた",
+  "血の味がする",
+  "爪切ってあげる",
+  "髪の毛、一本ちょうだい",
+  "君の部屋の盗聴器、電池切れそうだよ",
+  "来ちゃった♡",
+  "見てるよ",
+
+  // --- 追加バリエーション ---
+  "今日は誰とも会いたくない",
+  "スマホ水没させた",
+  "インスタの裏垢見つけたよ",
+  "君の家の近くに引っ越したよ",
+  "今、君の家の前にいる",
+  "部屋の明かり、ついてるね",
+  "なんでLINE返さないの？",
+  "既読スルーしないで",
+  "誰と電話してたの？",
+  "その服、新しいね。誰のために買ったの？",
+  "匂わせ投稿やめて",
+  "アイコン、誰に撮ってもらったの？",
+  "フォロワーの女、誰？",
+  "履歴消したでしょ",
+  "レシート見せて",
+  "今どこ？写真送って",
+  "ビデオ通話していい？",
+  "嘘つき",
+  "裏切り者",
+  "許さない",
+  "逃げられると思ってる？",
+  "君を閉じ込めておきたい",
+  "僕の手錠、どこやった？",
+  "首輪買ってあげる",
+  "骨まで愛してる",
+  "溶けてなくなりたい",
+  "君を食べてしまいたい",
+  "心中しよう",
+  "地獄まで付き合うよ",
+  "契約書、血判押したよ",
+  "保険金、受取人君にしたよ",
+  "遺骨はペンダントにしてね",
+  "君のゴミ漁ってる時が一番幸せ",
+  "君の食べたスプーン舐めてる"
 ];
 
-const STORAGE_KEY = "menhera_chat_draft"; 
+// フィッシャー–イェーツのシャッフル（偏りなく混ぜる関数）
+function shuffleArray<T>(array: T[]): T[] {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+}
 
 export default function DiagnosisClient() {
   const [step, setStep] = useState(0);
@@ -36,7 +158,9 @@ export default function DiagnosisClient() {
   const [showTerms, setShowTerms] = useState(false); 
   const [isLoaded, setIsLoaded] = useState(false);
   
-  // ▼ 追加: テキストエリアへの参照（フォーカス用）
+  // ランダムなサジェストを保持するState
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -44,15 +168,22 @@ export default function DiagnosisClient() {
       const savedInput = localStorage.getItem(STORAGE_KEY);
       if (savedInput) setUserInput(savedInput);
       setIsLoaded(true);
+
+      // ★★★ 初回ロード時にランダムに10個選出 ★★★
+      setSuggestions(shuffleArray(ALL_SUGGESTIONS).slice(0, 10));
     }
   }, []);
+
+  // シャッフルボタン用
+  const refreshSuggestions = () => {
+    setSuggestions(shuffleArray(ALL_SUGGESTIONS).slice(0, 10));
+  };
 
   useEffect(() => {
     if (isLoaded) localStorage.setItem(STORAGE_KEY, userInput);
   }, [userInput, isLoaded]);
 
   const clearInput = () => {
-    // confirmなしでサクッと消せたほうがUXが良い場合もあるが、誤操作防止のため残す
     if (userInput && confirm("メッセージを消去しますか？")) {
       setUserInput("");
       localStorage.removeItem(STORAGE_KEY);
@@ -70,7 +201,7 @@ export default function DiagnosisClient() {
       });
 
       const data = await res.json();
-      if (data.error) throw new Error(data.error); // エラーハンドリング追加
+      if (data.error) throw new Error(data.error);
       if (!data.id) throw new Error("API Error");
 
       setResult(data);
@@ -82,10 +213,8 @@ export default function DiagnosisClient() {
     }
   };
 
-  // ▼ 追加: 選択肢をクリックした時の処理
   const handleSuggestion = (text: string) => {
     setUserInput(text);
-    // 入力エリアにフォーカスを当てる
     if (textareaRef.current) {
       textareaRef.current.focus();
     }
@@ -111,6 +240,8 @@ export default function DiagnosisClient() {
   const handleRestart = () => {
     setStep(1);
     setUserInput("");
+    // 再開時にもサジェストを新しくする
+    setSuggestions(shuffleArray(ALL_SUGGESTIONS).slice(0, 10));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -190,23 +321,38 @@ export default function DiagnosisClient() {
                 <p className="text-[10px] text-purple-400">タップして入力、または自由に書いてね</p>
               </div>
 
-              {/* ▼▼▼ 追加: おすすめタグの横スクロールエリア ▼▼▼ */}
-              <div className="relative w-full overflow-x-hidden">
-                <div className="flex gap-2 overflow-x-auto pb-4 px-1 scrollbar-hide snap-x">
-                  {SUGGESTIONS.map((text, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleSuggestion(text)}
-                      className="shrink-0 snap-start px-4 py-2 bg-white border border-purple-200 text-purple-500 text-xs font-bold rounded-full shadow-sm hover:bg-purple-50 hover:border-purple-300 hover:text-purple-600 transition-all active:scale-95 whitespace-nowrap"
-                    >
-                      {text}
-                    </button>
-                  ))}
+              {/* ▼▼▼ サジェストの横スクロールエリア ▼▼▼ */}
+              <div className="relative w-full">
+                <div className="flex items-center gap-1 mb-2">
+                   <p className="text-[10px] text-purple-400 font-bold pl-1">おすすめの言葉（ランダム）</p>
+                   <button onClick={refreshSuggestions} className="p-1 bg-white rounded-full text-purple-400 hover:text-purple-600 shadow-sm transition-colors" title="入れ替える">
+                     <Shuffle size={12} />
+                   </button>
                 </div>
-                {/* 右側のフェードアウト効果 */}
-                <div className="absolute right-0 top-0 bottom-4 w-8 bg-gradient-to-l from-white/0 to-transparent pointer-events-none"></div>
+
+                <div className="relative w-full overflow-x-hidden">
+                  <div className="flex gap-2 overflow-x-auto pb-4 px-1 scrollbar-hide snap-x">
+                    {suggestions.map((text, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleSuggestion(text)}
+                        className="shrink-0 snap-start px-4 py-2 bg-white border border-purple-200 text-purple-500 text-xs font-bold rounded-full shadow-sm hover:bg-purple-50 hover:border-purple-300 hover:text-purple-600 transition-all active:scale-95 whitespace-nowrap"
+                      >
+                        {text}
+                      </button>
+                    ))}
+                    {/* 予備の再読み込みボタン（最後にも配置） */}
+                     <button
+                        onClick={refreshSuggestions}
+                        className="shrink-0 snap-start px-3 py-2 bg-purple-100 border border-purple-200 text-purple-500 text-xs font-bold rounded-full shadow-inner flex items-center gap-1"
+                      >
+                        <Shuffle size={12} />
+                        他を見る
+                      </button>
+                  </div>
+                  <div className="absolute right-0 top-0 bottom-4 w-8 bg-gradient-to-l from-white/0 to-transparent pointer-events-none"></div>
+                </div>
               </div>
-              {/* ▲▲▲ 追加ここまで ▲▲▲ */}
               
               <div className="relative group">
                 <textarea
@@ -256,7 +402,7 @@ export default function DiagnosisClient() {
               <div>
                 <p className="text-sm text-purple-500 font-bold animate-pulse">既読がつきました...</p>
                 <p className="text-[10px] text-purple-300 mt-1">
-                  彼女が長文を入力しています<span className="animate-pulse">...</span>
+                  もうちょっと待っててね<span className="animate-pulse">...</span>
                 </p>
               </div>
             </div>
