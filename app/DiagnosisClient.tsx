@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, Link as LinkIcon, Check, ChevronLeft, Send, Sparkles } from "lucide-react";
+import { Trash2, Link as LinkIcon, Check, ChevronLeft, Send, Sparkles, RefreshCw } from "lucide-react";
 import OgImagePreview from "./components/OgImagePreview";
 import TermsModal from "./components/TermsModal";
 
@@ -12,6 +12,20 @@ type ChatResult = {
   image_url: string;
 };
 
+// ▼ 追加: 面白い選択肢リスト
+const SUGGESTIONS = [
+  "今から会社の飲み会行ってくる！",
+  "ごめん、昨日は寝落ちしてた...",
+  "スマホのパスワード変えたよ",
+  "最近、視線を感じる気がする...",
+  "会社の女の子にチョコもらった",
+  "ちょっと距離を置きたい",
+  "GPSアプリ入れておいたよ♡",
+  "鍵、ポストに入れておいて",
+  "愛してる。死ぬまで一緒だよ",
+  "知らない番号から着信があった",
+];
+
 const STORAGE_KEY = "menhera_chat_draft"; 
 
 export default function DiagnosisClient() {
@@ -21,6 +35,9 @@ export default function DiagnosisClient() {
   const [copied, setCopied] = useState(false);
   const [showTerms, setShowTerms] = useState(false); 
   const [isLoaded, setIsLoaded] = useState(false);
+  
+  // ▼ 追加: テキストエリアへの参照（フォーカス用）
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -35,7 +52,8 @@ export default function DiagnosisClient() {
   }, [userInput, isLoaded]);
 
   const clearInput = () => {
-    if (confirm("メッセージを消去しますか？")) {
+    // confirmなしでサクッと消せたほうがUXが良い場合もあるが、誤操作防止のため残す
+    if (userInput && confirm("メッセージを消去しますか？")) {
       setUserInput("");
       localStorage.removeItem(STORAGE_KEY);
     }
@@ -52,14 +70,24 @@ export default function DiagnosisClient() {
       });
 
       const data = await res.json();
+      if (data.error) throw new Error(data.error); // エラーハンドリング追加
       if (!data.id) throw new Error("API Error");
 
       setResult(data);
       setStep(3);
     } catch (e) {
       console.error(e);
-      alert("通信エラーが発生しました。");
+      alert("通信エラー、またはAIが感情を処理しきれませんでした。もう一度試してね。");
       setStep(1); 
+    }
+  };
+
+  // ▼ 追加: 選択肢をクリックした時の処理
+  const handleSuggestion = (text: string) => {
+    setUserInput(text);
+    // 入力エリアにフォーカスを当てる
+    if (textareaRef.current) {
+      textareaRef.current.focus();
     }
   };
 
@@ -88,7 +116,7 @@ export default function DiagnosisClient() {
 
   return (
     <main className="min-h-screen bg-[#f8f5ff] text-purple-900 flex flex-col items-center justify-center p-4 font-sans selection:bg-purple-200">
-      <div className="w-full max-w-md bg-white/70 p-6 rounded-[2.5rem] border border-purple-100 shadow-2xl shadow-purple-200/50 backdrop-blur-xl relative min-h-[500px] flex flex-col">
+      <div className="w-full max-w-md bg-white/70 p-6 rounded-[2.5rem] border border-purple-100 shadow-2xl shadow-purple-200/50 backdrop-blur-xl relative min-h-[500px] flex flex-col transition-all">
         
         {/* ヘッダー */}
         <div className="relative mb-6 text-center shrink-0">
@@ -116,15 +144,13 @@ export default function DiagnosisClient() {
           {/* STEP 0: LP */}
           {step === 0 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center space-y-6">
-              {/* ▼▼▼ ここを修正（長方形のデザインに戻しました） ▼▼▼ */}
-              <div className="w-full overflow-hidden rounded-2xl shadow-md border-2 border-white/50">
+              <div className="w-full overflow-hidden rounded-2xl shadow-md border-2 border-white/50 group">
                 <img 
                   src="/banner.png" 
                   alt="Main Banner" 
-                  className="w-full h-auto object-cover"
+                  className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105"
                 />
               </div>
-              {/* ▲▲▲ 修正ここまで ▲▲▲ */}
               
               <div className="space-y-2">
                 <p className="text-xs text-purple-400/80 leading-relaxed max-w-[260px] mx-auto">
@@ -148,10 +174,10 @@ export default function DiagnosisClient() {
 
               <button 
                 onClick={() => setStep(1)} 
-                className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-400 text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-purple-200 flex items-center justify-center gap-2"
+                className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-400 text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-purple-200 flex items-center justify-center gap-2 group"
               >
                 AIにメッセージを送ってみる
-                <Send size={18} />
+                <Send size={18} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </motion.div>
           )}
@@ -159,18 +185,37 @@ export default function DiagnosisClient() {
           {/* STEP 1: 入力 */}
           {step === 1 && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-              <div className="text-center mb-4">
+              <div className="text-center mb-2">
                 <p className="text-sm font-bold text-purple-600">彼女にメッセージを送る</p>
-                <p className="text-[10px] text-purple-400">「おはよう」「コンビニ行く」なんでもOK</p>
+                <p className="text-[10px] text-purple-400">タップして入力、または自由に書いてね</p>
               </div>
+
+              {/* ▼▼▼ 追加: おすすめタグの横スクロールエリア ▼▼▼ */}
+              <div className="relative w-full overflow-x-hidden">
+                <div className="flex gap-2 overflow-x-auto pb-4 px-1 scrollbar-hide snap-x">
+                  {SUGGESTIONS.map((text, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleSuggestion(text)}
+                      className="shrink-0 snap-start px-4 py-2 bg-white border border-purple-200 text-purple-500 text-xs font-bold rounded-full shadow-sm hover:bg-purple-50 hover:border-purple-300 hover:text-purple-600 transition-all active:scale-95 whitespace-nowrap"
+                    >
+                      {text}
+                    </button>
+                  ))}
+                </div>
+                {/* 右側のフェードアウト効果 */}
+                <div className="absolute right-0 top-0 bottom-4 w-8 bg-gradient-to-l from-white/0 to-transparent pointer-events-none"></div>
+              </div>
+              {/* ▲▲▲ 追加ここまで ▲▲▲ */}
               
-              <div className="relative">
+              <div className="relative group">
                 <textarea
+                  ref={textareaRef}
                   className="w-full bg-white border-2 border-purple-100 rounded-2xl p-4 text-purple-900 focus:outline-none focus:border-pink-300 min-h-[140px] transition-colors placeholder-purple-200 text-base shadow-sm pr-10 resize-none"
                   placeholder="例：今から飲み会行ってくるね！"
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
-                  maxLength={100} // ★追加：100文字制限
+                  maxLength={100} 
                 />
                 
                 {userInput && (
@@ -184,9 +229,7 @@ export default function DiagnosisClient() {
               </div>
 
               <div className="flex justify-between items-center px-1">
-                   {/* 左側のスペース埋め（必要なら何か入れる） */}
                    <span></span>
-                   {/* 文字数カウント表示修正 */}
                    <span className={`text-[10px] font-bold ${userInput.length >= 100 ? "text-pink-500" : "text-purple-300"}`}>
                      {userInput.length} / 100 文字
                    </span>
@@ -194,10 +237,10 @@ export default function DiagnosisClient() {
 
               <button
                 onClick={sendMessage}
-                className="w-full py-4 bg-purple-600 text-white rounded-2xl font-black disabled:opacity-30 disabled:grayscale transition-all shadow-md shadow-purple-100 flex items-center justify-center gap-2"
+                className="w-full py-4 bg-purple-600 text-white rounded-2xl font-black disabled:opacity-30 disabled:grayscale transition-all shadow-md shadow-purple-100 flex items-center justify-center gap-2 hover:bg-purple-700 active:scale-[0.98]"
                 disabled={!userInput}
               >
-                <Sparkles size={18} />
+                <Sparkles size={18} className={userInput ? "animate-pulse" : ""} />
                 送信する
               </button>
             </motion.div>
@@ -206,9 +249,16 @@ export default function DiagnosisClient() {
           {/* STEP 2: ローディング */}
           {step === 2 && (
             <div className="text-center py-20 space-y-4">
-              <div className="animate-spin inline-block w-10 h-10 border-[4px] border-purple-200 border-t-pink-500 rounded-full"></div>
-              <p className="text-sm text-purple-400 font-bold animate-pulse">既読がつきました...</p>
-              <p className="text-[10px] text-purple-300">入力中...</p>
+              <div className="relative inline-block">
+                <div className="animate-spin w-12 h-12 border-[4px] border-purple-100 border-t-pink-500 rounded-full"></div>
+                <div className="absolute inset-0 flex items-center justify-center text-xs">♡</div>
+              </div>
+              <div>
+                <p className="text-sm text-purple-500 font-bold animate-pulse">既読がつきました...</p>
+                <p className="text-[10px] text-purple-300 mt-1">
+                  彼女が長文を入力しています<span className="animate-pulse">...</span>
+                </p>
+              </div>
             </div>
           )}
 
@@ -223,7 +273,7 @@ export default function DiagnosisClient() {
                   <div className="bg-purple-200 text-purple-900 text-xs py-2 px-4 rounded-2xl rounded-br-none max-w-[80%] shadow-sm">
                     {result.user_input}
                   </div>
-                  <div className="w-6 h-6 rounded-full bg-purple-300 flex items-center justify-center text-[10px] text-white shrink-0">
+                  <div className="w-6 h-6 rounded-full bg-purple-300 flex items-center justify-center text-[10px] text-white shrink-0 font-bold">
                     Me
                   </div>
                 </div>
@@ -231,7 +281,7 @@ export default function DiagnosisClient() {
                 {/* AI */}
                 <div className="flex justify-start items-end gap-2">
                   <img src={result.image_url} alt="AI" className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm shrink-0" />
-                  <div className="bg-white text-purple-900 text-sm font-bold py-3 px-4 rounded-2xl rounded-bl-none max-w-[85%] shadow-md border border-pink-100 leading-relaxed">
+                  <div className="bg-white text-purple-900 text-sm font-bold py-3 px-4 rounded-2xl rounded-bl-none max-w-[85%] shadow-md border border-pink-100 leading-relaxed text-left">
                     {result.ai_reply}
                   </div>
                 </div>
@@ -242,30 +292,31 @@ export default function DiagnosisClient() {
                 <OgImagePreview id={result.id} />
                 
                 <p className="text-[10px] text-center text-purple-400 font-medium">
-                  かわいい彼女の返信をシェアしよう<br></br>
-                  編集の時に画像が出なくても、送信したらちゃんと上の画像が出るからね
+                  かわいい彼女の返信をシェアしよう
                 </p>
 
                 <div className="flex gap-2">
                   <button
                     onClick={shareOnX}
-                    className="flex-[2] py-3 bg-black text-white rounded-xl font-bold text-xs hover:opacity-80 transition-all flex items-center justify-center gap-2"
+                    className="flex-[2] py-3 bg-black text-white rounded-xl font-bold text-xs hover:opacity-80 transition-all flex items-center justify-center gap-2 shadow-lg"
                   >
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
                     Xで共有
                   </button>
                    <button
                     onClick={copyLink}
-                    className="flex-1 py-3 bg-white border border-purple-200 text-purple-400 rounded-xl font-bold hover:bg-purple-50 transition-all flex items-center justify-center"
+                    className="flex-1 py-3 bg-white border border-purple-200 text-purple-400 rounded-xl font-bold hover:bg-purple-50 transition-all flex items-center justify-center shadow-sm"
                   >
-                    <p>リンク</p>{copied ? <Check size={18} /> : <LinkIcon size={18} />}
+                    {copied ? <Check size={18} /> : <LinkIcon size={18} />}
                   </button>
                 </div>
               </div>
 
               <button 
                 onClick={handleRestart}
-                className="w-full text-xs text-purple-300 font-bold underline decoration-purple-100 underline-offset-4 hover:text-purple-400 transition-colors pt-4 pb-2"
+                className="w-full group flex items-center justify-center gap-2 text-xs text-purple-400 font-bold py-3 hover:text-purple-600 transition-colors"
               >
+                <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-500"/>
                 別のメッセージを送る
               </button>
             </motion.div>
