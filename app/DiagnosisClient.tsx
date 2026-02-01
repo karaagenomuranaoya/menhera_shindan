@@ -14,6 +14,13 @@ type ChatResult = {
 
 const STORAGE_KEY = "menhera_chat_draft"; 
 
+// 修正用のヘルパー関数を作成（コンポーネント内でも外でもOK）
+const formatReply = (text: string) => {
+  // [[...]] の部分を削除して返す
+  return text.replace(/\[\[.*?\]\]/g, "").trim();
+};
+
+
 // ▼▼▼ 100個以上の厳選ワードリスト ▼▼▼
 const ALL_SUGGESTIONS = [
   // --- 基本・日常 ---
@@ -387,7 +394,8 @@ export default function DiagnosisClient() {
                 <div className="flex justify-start items-end gap-2">
                   <img src={result.image_url} alt="AI" className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm shrink-0" />
                   <div className="bg-white text-purple-900 text-sm font-bold py-3 px-4 rounded-2xl rounded-bl-none max-w-[85%] shadow-md border border-pink-100 leading-relaxed text-left">
-                    {result.ai_reply}
+                    {/* ▼ ここで関数を使う ▼ */}
+                  {formatReply(result.ai_reply)}
                   </div>
                 </div>
               </div>

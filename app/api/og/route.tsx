@@ -29,12 +29,13 @@ export async function GET(req: NextRequest) {
 
     const { user_input, ai_reply, image_url } = data;
 
-    // --- 変更点ここから ---
-    // AIの返答が120文字を超えていたら切り取って "..." をつける
-    const displayAiReply = ai_reply.length > 119 
-      ? ai_reply.substring(0, 119) + '...' 
-      : ai_reply;
-    // --- 変更点ここまで ---
+    // 1. [[ ]] で囲まれた部分を探す
+    const match = ai_reply.match(/\[\[(.*?)\]\]/);
+    
+    // 2. 見つかればそれを使い、なければ従来の「120文字切り取り」を使う（過去データ対応）
+    const displayAiReply = match 
+      ? match[1] // [[ ]] の中身だけを使う
+      : (ai_reply.length > 119 ? ai_reply.substring(0, 119) + '...' : ai_reply);
 
     return new ImageResponse(
       (
