@@ -1,0 +1,18 @@
+{
+  // デフォルトのフォーマッタをBiomeに設定
+  "editor.defaultFormatter": "biomejs.biome",
+  // 保存時に自動整形を有効化
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    // 保存時にimport順の整理と、修正可能なエラーの自動修正を実行
+    "source.organizeImports.biome": "explicit",
+    "source.fixAll.biome": "explicit"
+  },
+  // 言語ごとにBiomeを指定（確実に効かせるため）
+  "[javascript]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[javascriptreact]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[typescript]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[typescriptreact]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[json]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[jsonc]": { "editor.defaultFormatter": "biomejs.biome" }
+}
