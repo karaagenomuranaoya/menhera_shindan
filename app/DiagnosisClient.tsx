@@ -179,7 +179,7 @@ export default function DiagnosisClient() {
 
 	const shareOnX = () => {
 		if (!result) return;
-		const text = `AIメンヘラ彼女が怖すぎた...\n#AIメンヘラ彼女\n`;
+		const text = `AI癖強いって`;
 		const shareUrl = `${window.location.origin}/result/${result.id}`;
 		const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
 		window.open(xUrl, "_blank");
