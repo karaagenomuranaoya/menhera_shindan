@@ -157,7 +157,7 @@ export async function GET(req: NextRequest) {
 						>
 							<div
 								style={{
-									fontSize: "14px",
+									fontSize: "16px",
 									color: "#a855f7",
 									fontWeight: "bold",
 									marginBottom: "5px",
@@ -172,7 +172,7 @@ export async function GET(req: NextRequest) {
 									color: "#6b21a8",
 									padding: "12px 25px",
 									borderRadius: "20px",
-									fontSize: "25px",
+									fontSize: "36px",
 									fontWeight: "600",
 									textAlign: "center",
 									maxWidth: "90%",

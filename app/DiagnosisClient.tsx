@@ -271,25 +271,21 @@ export default function DiagnosisClient() {
 								/>
 							</div>
 
-							<div className="space-y-2">
-								<p className="text-xs text-purple-400/80 leading-relaxed max-w-[260px] mx-auto">
-									<span className="block py-2">
-										<span className="inline-block animate-bounce-subtle text-base font-black tracking-tighter bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-[0_2px_2px_rgba(255,182,193,0.5)]">
-											AIがあなたのメッセージに
-										</span>
-									</span>
-									<span className="block py-2">
-										<span className="inline-block animate-bounce-subtle text-base font-black tracking-tighter bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-[0_2px_2px_rgba(255,182,193,0.5)]">
-											♡かわいく猟奇的に♡
-										</span>
-									</span>
-									<span className="block py-2">
-										<span className="inline-block animate-bounce-subtle text-base font-black tracking-tighter bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-[0_2px_2px_rgba(255,182,193,0.5)]">
-											返信します。
-										</span>
-									</span>
+							{/* ▼▼▼ ここを書き換え ▼▼▼ */}
+							<div className="py-2 text-center space-y-1">
+								{/* 1行目：少し控えめに */}
+								<p className="text-sm font-bold text-purple-400 tracking-widest">
+									AIメンヘラ彼女が
+								</p>
+
+								{/* 2行目：強調・グラデーション・ハート装飾 */}
+								<p className="text-lg font-black tracking-tighter bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(236,72,153,0.3)]">
+									<span className="inline-block animate-pulse">♡</span>
+									<span className="mx-1">あなたに愛を囁きます</span>
+									<span className="inline-block animate-pulse">♡</span>
 								</p>
 							</div>
+							{/* ▲▲▲ 書き換えここまで ▲▲▲ */}
 
 							{/** biome-ignore lint/a11y/useButtonType: <explanation> */}
 							<button
@@ -493,6 +489,7 @@ export default function DiagnosisClient() {
 										onClick={copyLink}
 										className="flex-1 py-3 bg-white border border-purple-200 text-purple-400 rounded-xl font-bold hover:bg-purple-50 transition-all flex items-center justify-center shadow-sm"
 									>
+										リンク
 										{copied ? <Check size={18} /> : <LinkIcon size={18} />}
 									</button>
 								</div>
