@@ -32,7 +32,7 @@ const redis = new Redis({
 
 const ratelimit = new Ratelimit({
 	redis: redis,
-	limiter: Ratelimit.slidingWindow(5, "60 s"),
+	limiter: Ratelimit.slidingWindow(3, "60 s"),
 	analytics: true,
 	prefix: "@upstash/menhera_chat",
 });
