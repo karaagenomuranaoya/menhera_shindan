@@ -17,7 +17,6 @@ const BASE_STORAGE_URL =
 	"https://aznqyljrnvfalhpkbbpo.supabase.co/storage/v1/object/public/menhera-images";
 
 const IMAGE_CANDIDATES = [
-	`${BASE_STORAGE_URL}/SSS.png`,
 	`${BASE_STORAGE_URL}/SS.png`,
 	`${BASE_STORAGE_URL}/S.png`,
 	`${BASE_STORAGE_URL}/A.png`,

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import {
 	Check,
 	ChevronLeft,
+	Coffee,
 	Link as LinkIcon,
 	RefreshCw,
 	Send,
@@ -472,7 +473,6 @@ export default function DiagnosisClient() {
 									</button>
 								</div>
 							</div>
-
 							{/** biome-ignore lint/a11y/useButtonType: <explanation> */}
 							<button
 								onClick={handleRestart}
@@ -484,6 +484,61 @@ export default function DiagnosisClient() {
 								/>
 								別のメッセージを送る
 							</button>
+							<motion.div
+								initial={{ opacity: 0, y: 10 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{ delay: 2 }} // 少し遅れて表示させて気付かせる
+								className="mt-6 mb-2"
+							>
+								<a
+									href="https://www.buymeacoffee.com/karakuri" // ← 作成したURLを入れてね
+									target="_blank"
+									rel="noopener noreferrer"
+									className="group relative block w-full overflow-hidden rounded-2xl bg-gradient-to-br from-amber-100 to-orange-50 border border-orange-200 p-4 shadow-md transition-all hover:shadow-lg hover:-translate-y-0.5"
+								>
+									{/* 背景のキラキラ装飾（控えめに） */}
+									<div className="absolute top-0 right-0 -mt-4 -mr-4 h-16 w-16 rounded-full bg-orange-200/50 blur-xl group-hover:scale-150 transition-transform duration-500" />
+
+									<div className="relative flex items-center justify-between gap-3">
+										<div className="flex items-center gap-3">
+											<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm text-orange-400">
+												<Coffee size={20} strokeWidth={2.5} />
+											</div>
+											<div className="text-left">
+												<p className="text-[10px] font-bold text-orange-400 uppercase tracking-wider">
+													Developer Support
+												</p>
+												<p className="text-xs font-bold text-orange-900/80 group-hover:text-orange-600 transition-colors">
+													開発者にコーヒー（精神安定剤）を贈る
+												</p>
+											</div>
+										</div>
+
+										{/* 矢印アイコン */}
+										<div className="text-orange-300 group-hover:translate-x-1 transition-transform">
+											{/** biome-ignore lint/a11y/noSvgWithoutTitle: <explanation> */}
+											<svg
+												width="20"
+												height="20"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												strokeWidth="2"
+												strokeLinecap="round"
+												strokeLinejoin="round"
+											>
+												<path d="M5 12h14" />
+												<path d="m12 5 7 7-7 7" />
+											</svg>
+										</div>
+									</div>
+
+									{/* 激重彼女からのひとこと（ランダムで変えても面白い） */}
+									<div className="mt-2 border-t border-orange-200/50 pt-2 text-[10px] text-orange-800/60 font-medium text-center">
+										「サーバー代がないと…私、消えちゃうの…？」
+									</div>
+								</a>
+							</motion.div>
 						</motion.div>
 					)}
 				</div>
