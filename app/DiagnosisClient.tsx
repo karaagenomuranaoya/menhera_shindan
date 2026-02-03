@@ -29,7 +29,7 @@ const formatReply = (text: string) => {
 	return text.replace(/\[\[.*?\]\]/g, "").trim();
 };
 
-// ▼▼▼ 100個以上の厳選ワードリスト ▼▼▼
+// ▼▼▼ワードリスト ▼▼▼
 const ALL_SUGGESTIONS = [
 	"おはよう",
 	"おやすみ",
@@ -89,6 +89,7 @@ const ALL_SUGGESTIONS = [
 	"髪の毛、一本ちょうだい",
 	"君の部屋の盗聴器、電池切れそうだよ",
 	"見てるよ",
+	"おーい",
 ];
 
 // フィッシャー–イェーツのシャッフル（偏りなく混ぜる関数）

@@ -265,7 +265,7 @@ const formatReply = (text: string) => {
 	return text.replace(/\[\[.*?\]\]/g, "").trim();
 };
 
-// ▼▼▼ 100個以上の厳選ワードリスト ▼▼▼
+// ▼▼▼ワードリスト ▼▼▼
 const ALL_SUGGESTIONS = [
 	"おはよう",
 	"おやすみ",
@@ -325,6 +325,7 @@ const ALL_SUGGESTIONS = [
 	"髪の毛、一本ちょうだい",
 	"君の部屋の盗聴器、電池切れそうだよ",
 	"見てるよ",
+	"おーい",
 ];
 
 // フィッシャー–イェーツのシャッフル（偏りなく混ぜる関数）
@@ -870,22 +871,23 @@ export default function Home() {
 
 ## File: app/sitemap.ts
 ```ts
-import { MetadataRoute } from 'next'
+import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  // 本番のURL（最後にスラッシュなし）
-  const baseUrl = 'https://menhera-shindan.vercel.app' 
+	// 本番のURL（最後にスラッシュなし）
+	const baseUrl = "https://ai-gekiomo-girlfriend.vercel.app";
 
-  return [
-    {
-      url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 1,
-    },
-    // 結果ページは動的なので、とりあえずトップページだけでOK
-  ]
+	return [
+		{
+			url: baseUrl,
+			lastModified: new Date(),
+			changeFrequency: "daily",
+			priority: 1,
+		},
+		// 結果ページは動的なので、とりあえずトップページだけでOK
+	];
 }
+
 ```
 
 ## File: app/result/[id]/page.tsx
@@ -893,7 +895,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
 import { createClient } from "@supabase/supabase-js";
 import type { Metadata } from "next";
 import Link from "next/link";
-// ▼ 追加: コンポーネントをインポート
 import OgImagePreview from "../../components/OgImagePreview";
 
 type Props = {
@@ -904,36 +905,20 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// メタデータ生成
+// ▼▼▼ 1. この整形用関数を追加してください ▼▼▼
+const formatReply = (text: string) => {
+	// [[...]] の部分を削除して前後の空白を取り除く
+	return text.replace(/\[\[.*?\]\]/g, "").trim();
+};
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+	// ... (generateMetadataの中身は変更なしでOK)
 	const { id } = await params;
-	const { data } = await supabase
-		.from("menhera_chats")
-		.select("*")
-		.eq("id", id)
-		.single();
-
-	const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-
-	if (!data) return { title: "ページが見つかりません | AI激重彼女" };
-
-	const ogUrl = new URL("/api/og", baseUrl);
-	ogUrl.searchParams.set("id", id);
-
+	// ...
+	// ※メタデータの説明文にも [[ ]] が出ないようにしたい場合は、
+	// ここでも formatReply(data.ai_reply) を使うとより丁寧です。
 	return {
-		title: `AI激重彼女：彼女からの返信`,
-		description: `私: ${data.user_input.substring(0, 20)}... -> 彼女: ${data.ai_reply.substring(0, 40)}...`,
-		openGraph: {
-			title: "AI激重彼女",
-			description: data.ai_reply,
-			images: [ogUrl.toString()],
-		},
-		twitter: {
-			card: "summary_large_image",
-			title: "AI激重彼女",
-			description: data.ai_reply,
-			images: [ogUrl.toString()],
-		},
+		// ...
 	};
 }
 
@@ -946,6 +931,7 @@ export default async function ResultPage({ params }: Props) {
 		.single();
 
 	if (error || !result) {
+		// ... (エラー表示部分はそのまま)
 		return (
 			<div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#f8f5ff]">
 				<p className="text-purple-400 font-bold mb-4">
@@ -961,13 +947,7 @@ export default async function ResultPage({ params }: Props) {
 	return (
 		<main className="min-h-screen bg-[#f8f5ff] text-purple-900 flex flex-col items-center justify-center p-4 font-sans">
 			<div className="w-full max-w-md bg-white/70 p-6 rounded-[2.5rem] border border-purple-100 shadow-2xl shadow-purple-200/50 backdrop-blur-xl space-y-8 relative overflow-hidden">
-				<div className="absolute top-0 right-0 bg-pink-100 text-pink-500 text-[10px] font-bold px-3 py-1 rounded-bl-xl z-10">
-					SHARED VIEW
-				</div>
-
-				<h1 className="text-center text-xl font-black text-transparent bg-clip-text bg-gradient-to-br from-purple-500 to-pink-400 mt-2">
-					AI激重彼女
-				</h1>
+				{/* ... (ヘッダーなどはそのまま) ... */}
 
 				{/* チャット表示 */}
 				<div className="space-y-6">
@@ -994,28 +974,16 @@ export default async function ResultPage({ params }: Props) {
 							<span className="text-[10px] text-purple-300 font-bold">HER</span>
 						</div>
 						<div className="bg-white text-purple-900 text-base font-bold py-4 px-5 rounded-2xl shadow-md border-2 border-pink-50 leading-relaxed max-w-[85%] relative">
-							{result.ai_reply}
+							{/* ▼▼▼ 2. ここを修正: formatReply() で囲む ▼▼▼ */}
+							{formatReply(result.ai_reply)}
+							{/* ▲▲▲ 修正ここまで ▲▲▲ */}
+
 							<div className="absolute -top-2 -left-2 text-2xl"></div>
 						</div>
 					</div>
 				</div>
 
-				{/* ▼ 追加: OGP画像プレビューエリア（区切り線を追加して配置） */}
-				<div className="border-t border-purple-100 pt-4">
-					<OgImagePreview id={result.id} />
-				</div>
-
-				<div className="pt-2 space-y-3">
-					<p className="text-xs text-center text-purple-400 font-bold">
-						あなたの言葉も聞いてみたいな♡
-					</p>
-					<Link
-						href="/"
-						className="block w-full py-4 bg-gradient-to-r from-purple-500 to-pink-400 text-white rounded-2xl font-black hover:opacity-90 transition-all shadow-lg text-center animate-pulse"
-					>
-						自分も試してみる
-					</Link>
-				</div>
+				{/* ... (残りの部分はそのまま) ... */}
 			</div>
 		</main>
 	);
@@ -1045,7 +1013,7 @@ export default function OgImagePreview({ id }: Props) {
 		<div className="w-full max-w-lg mx-auto mt-6 mb-8 space-y-6">
 			<div className="text-center space-y-3">
 				<h3 className="text-sm font-bold text-purple-400 tracking-widest">
-					M Reply
+					Gekiomo Reply
 				</h3>
 
 				{/* --- ここを変更: 目立つアニメーション付きバッジ --- */}
@@ -1147,6 +1115,7 @@ export default function TermsModal({ isOpen, onClose }: Props) {
 								<ScrollText size={18} />
 								<span>ヒミツの約束（利用規約）</span>
 							</div>
+							{/** biome-ignore lint/a11y/useButtonType: <explanation> */}
 							<button
 								onClick={onClose}
 								className="p-1 text-purple-300 hover:text-purple-500 transition-colors bg-white rounded-full shadow-sm"
@@ -1158,7 +1127,7 @@ export default function TermsModal({ isOpen, onClose }: Props) {
 						{/* 本文エリア */}
 						<div className="p-6 overflow-y-auto text-sm text-purple-900/80 space-y-4 leading-relaxed scrollbar-thin scrollbar-thumb-purple-200 scrollbar-track-transparent">
 							<p>
-								「AI激重解釈」（以下、当サービス）を利用するにあたり、以下の内容に同意したものとみなします。
+								「AI激重彼女」（以下、当サービス）を利用するにあたり、以下の内容に同意したものとみなします。
 							</p>
 
 							<div className="space-y-2">
@@ -1196,6 +1165,7 @@ export default function TermsModal({ isOpen, onClose }: Props) {
 
 						{/* フッター */}
 						<div className="p-4 border-t border-purple-100 bg-white">
+							{/** biome-ignore lint/a11y/useButtonType: <explanation> */}
 							<button
 								onClick={onClose}
 								className="w-full py-3 bg-gradient-to-r from-purple-400 to-pink-300 text-white rounded-xl font-bold text-sm shadow-md hover:opacity-90 transition-all"
@@ -1248,7 +1218,7 @@ const redis = new Redis({
 
 const ratelimit = new Ratelimit({
 	redis: redis,
-	limiter: Ratelimit.slidingWindow(5, "60 s"),
+	limiter: Ratelimit.slidingWindow(3, "60 s"),
 	analytics: true,
 	prefix: "@upstash/menhera_chat",
 });
@@ -1671,7 +1641,7 @@ export const FIXED_REPLIES: Record<string, string[]> = {
 		"はーい、きれいになってきてね♡お風呂での電話って反響してあなたの声二重に聞けるから大好き！え？ゆっくり入らせてくれって？私のこと嫌いなんだ！だって20分くらいもあなたと話せないんだよ？あなたは気持ちいいお風呂だけど私は水責め拷問気分タイムだよ！うぅ、寂しい...。ねぇ、5分...ううん、3分、いや、40秒！超特急で戻ってきて！ 上がったら体拭く前に「上がったよ」って報告してね？ 絶対だよ？ [[はーい、きれいになってきてね♡お風呂で電話…しないの？なんで？あ！私のこと嫌いなんだ。40秒で上がって！体拭く前に電話して！]]",
 	],
 	今日は雨だね: [
-		"雨だねぇ。そういえば気象庁が天気を観測するシステムなんて言うか知ってる？「アメダス」だよ。雨だす、方言かよってね！私、あなたのこと大好きだす！愛も行動も体温も観測しちゃうぞ♡…どうしたのその冷たい目！乙女に向けないでそんな視線！なんかもっと楽しいことしよ！何かいいかな…？あ！整いました！雨空に、ふやけるあなたもかわいいね。風流！　1日中おうちでお話ししよ！！ [[雨空に、ふやけるあなたもかわいいね。1日中お話ししよ！]]",
+		"雨だねぇ。そういえば気象庁が天気を観測するシステムなんて言うか知ってる？「アメダス」だよ。雨だす、方言かよってね！私、あなたのこと大好きだす！愛も行動も体温も観測しちゃうぞ♡…どうしたのその冷たい目！乙女に向けないでそんな視線！なんかもっと楽しいことしよ！何がいいかな…？あ！整いました！雨空に、ふやけるあなたもかわいいね。風流！　1日中おうちでお話ししよ！！ [[雨空に、ふやけるあなたもかわいいね。風流だねぇ。1日中お話ししよ！]]",
 	],
 	"お腹すいた...何食べよう？": [
 		"かわいそうに、私が一緒にいたら何でも作ってあげるのに...。栄養あるもの食べてね？ あ、でも私のこと「食べちゃいたい」くらい好き...とか思ってくれてもいいんだよ？ なんちゃって♡ 食べたもの写真送って！ 私もそれ作って食べるから！お腹の中までぺ・ア・ル・ッ・ク♡ [[私のこと食べちゃいたいくらい好きだって？きゃー♡！！え、言ってない？まったくもう冗談言わないで！]]",
@@ -1831,6 +1801,12 @@ export const FIXED_REPLIES: Record<string, string[]> = {
 	],
 	見てるよ: [
 		"もっと見て！ 穴が空くほど見て！ 瞬きしないで監視して！ あなたの視線を感じるだけで、私、生きてるって実感できるの。でも、「見る」という動詞で私に勝てる人はたぶんいないと思うの。あ、今細胞が分裂した。またほんのちょっと一緒に年を重ねられたね♡ [[またほんのちょっと一緒に年を重ねられたね♡]]",
+	],
+	おーい: [
+		"おーい！おーい！僕の大好きな人はいませんか〜？ってこと？ふふっ、じゃじゃーん！ここにいるよ♡あなたの「おーい」ちゃーんと録音したよ！今日から毎晩これをリピートしたASMRで寝るんだあ♡やまびこみたいだね！あなたと登山する夢が見られるかも！一緒に愛のご来光が見られますように♡  [[「おーい」「おーい」やまびこかな♡？目指せ山頂、拝め愛のご来光！ってことだね！！]]",
+	],
+	うるさい: [
+		"もう♡何も言ってないじゃん！あ！それとも聞こえちゃった！？この私の心音！心臓が脈打つたびに、あなたへの大好きがドクン！ドクン！って大きな音を立てるの！ごめんねうるさくて？でも、ドキドキが溢れて止まらない私も愛して♡♡  [[あ、私の心音うるさかった？ごめんね、あなたといるとドキドキが止まらなくて♡]]",
 	],
 };
 

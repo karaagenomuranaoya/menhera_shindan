@@ -33,6 +33,7 @@ export default function TermsModal({ isOpen, onClose }: Props) {
 								<ScrollText size={18} />
 								<span>ヒミツの約束（利用規約）</span>
 							</div>
+							{/** biome-ignore lint/a11y/useButtonType: <explanation> */}
 							<button
 								onClick={onClose}
 								className="p-1 text-purple-300 hover:text-purple-500 transition-colors bg-white rounded-full shadow-sm"
@@ -44,7 +45,7 @@ export default function TermsModal({ isOpen, onClose }: Props) {
 						{/* 本文エリア */}
 						<div className="p-6 overflow-y-auto text-sm text-purple-900/80 space-y-4 leading-relaxed scrollbar-thin scrollbar-thumb-purple-200 scrollbar-track-transparent">
 							<p>
-								「AI激重解釈」（以下、当サービス）を利用するにあたり、以下の内容に同意したものとみなします。
+								「AI激重彼女」（以下、当サービス）を利用するにあたり、以下の内容に同意したものとみなします。
 							</p>
 
 							<div className="space-y-2">
@@ -82,6 +83,7 @@ export default function TermsModal({ isOpen, onClose }: Props) {
 
 						{/* フッター */}
 						<div className="p-4 border-t border-purple-100 bg-white">
+							{/** biome-ignore lint/a11y/useButtonType: <explanation> */}
 							<button
 								onClick={onClose}
 								className="w-full py-3 bg-gradient-to-r from-purple-400 to-pink-300 text-white rounded-xl font-bold text-sm shadow-md hover:opacity-90 transition-all"
