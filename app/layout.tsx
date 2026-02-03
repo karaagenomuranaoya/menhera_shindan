@@ -4,43 +4,43 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+	variable: "--font-geist-sans",
+	subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+	variable: "--font-geist-mono",
+	subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "AI メンヘラ診断",
-  description: "なたの何気ないメッセージに、メンヘラAIが♡かわいく猟奇的に♡返信します。",
-  viewport: "width=device-width, initial-scale=1",
-  icons: {
-    icon: "/favicon.png", // public/favicon.png を参照
-  },
-  verification: {
-    google: 'gTBau9kCei49KzHb9OaBOrOeYj3Mwd_LCn1sktxJqMY', 
-  },
+	title: "AI 激重診断",
+	description:
+		"なたの何気ないメッセージに、激重AIが♡かわいく猟奇的に♡返信します。",
+	viewport: "width=device-width, initial-scale=1",
+	icons: {
+		icon: "/favicon.png", // public/favicon.png を参照
+	},
+	verification: {
+		google: "gTBau9kCei49KzHb9OaBOrOeYj3Mwd_LCn1sktxJqMY",
+	},
 };
 
 export default function RootLayout({
-  children,
+	children,
 }: Readonly<{
-  children: React.ReactNode;
+	children: React.ReactNode;
 }>) {
-  return (
-    <html lang="ja">
-      <head>
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-        {/* ▼▼▼ 2. この行を追加（ここに配置することで全ページで計測されます） ▼▼▼ */}
-        <Analytics />
-      </body>
-    </html>
-  );
+	return (
+		<html lang="ja">
+			<head></head>
+			<body
+				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+			>
+				{children}
+				{/* ▼▼▼ 2. この行を追加（ここに配置することで全ページで計測されます） ▼▼▼ */}
+				<Analytics />
+			</body>
+		</html>
+	);
 }

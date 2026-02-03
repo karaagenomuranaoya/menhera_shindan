@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
 					>
 						<img
 							src={image_url}
-							alt="Menhera Girl"
+							alt="Gekiomo Girl"
 							style={{
 								width: "280px",
 								height: "280px",
@@ -131,7 +131,7 @@ export async function GET(req: NextRequest) {
 								letterSpacing: "0.1em",
 							}}
 						>
-							AI MENHERA
+							AI Gekiomo
 						</div>
 					</div>
 

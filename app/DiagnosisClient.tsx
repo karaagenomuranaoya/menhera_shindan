@@ -222,10 +222,10 @@ export default function DiagnosisClient() {
 						onClick={() => setStep(0)}
 						className="text-xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-purple-500 to-pink-400 inline-block cursor-pointer"
 					>
-						AIメンヘラ彼女
+						AI激重彼女
 						<br />
 						<span className="text-[10px] font-bold text-purple-300 tracking-normal">
-							AI Menhera GirlFriend
+							AI Gekiomo GirlFriend
 						</span>
 					</h1>
 				</div>
@@ -252,7 +252,7 @@ export default function DiagnosisClient() {
 							<div className="py-2 text-center space-y-1">
 								{/* 1行目：少し控えめに */}
 								<p className="text-sm font-bold text-purple-400 tracking-widest">
-									AIメンヘラ彼女が
+									AI激重彼女が
 								</p>
 
 								{/* 2行目：強調・グラデーション・ハート装飾 */}
