@@ -449,6 +449,8 @@ export default function DiagnosisClient() {
 
 								<p className="text-[10px] text-center text-purple-400 font-medium">
 									かわいい彼女の返信をシェアしよう
+									<br />
+									投稿すればちゃんと画像で表示されるからね。
 								</p>
 
 								<div className="flex gap-2">
