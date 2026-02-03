@@ -18,7 +18,7 @@ export default function OgImagePreview({ id }: Props) {
 		<div className="w-full max-w-lg mx-auto mt-6 mb-8 space-y-6">
 			<div className="text-center space-y-3">
 				<h3 className="text-sm font-bold text-purple-400 tracking-widest">
-					M Reply
+					Gekiomo Reply
 				</h3>
 
 				{/* --- ここを変更: 目立つアニメーション付きバッジ --- */}
