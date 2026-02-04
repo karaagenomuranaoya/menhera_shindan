@@ -19,10 +19,10 @@ export async function generateMetadata({
 	const defaultMetadata = {
 		title: "AI 激重彼女",
 		description:
-			"あなたの何気ないメッセージに、激重AIが♡かわいく猟奇的に♡返信します。",
+			"AI彼女があなたにちょっぴり歪んだ愛をぶつけます♡ログイン不要、ブラウザで動くよ！",
 		openGraph: {
 			title: "AI 激重彼女",
-			description: "AIが愛と恐怖をあなたにぶつけます。",
+			description: "AI彼女が激重の愛をぶつけます♡",
 			// ▼▼▼ 修正: ogp.png を参照するように変更 ▼▼▼
 			images: [`${baseUrl}/ogp.png`],
 		},
@@ -30,7 +30,7 @@ export async function generateMetadata({
 		twitter: {
 			card: "summary_large_image",
 			title: "AI 激重彼女",
-			description: "AIが愛と恐怖をあなたにぶつけます。",
+			description: "AI彼女が激重の愛をぶつけます♡",
 			images: [`${baseUrl}/ogp.png`],
 		},
 	};

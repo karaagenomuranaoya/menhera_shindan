@@ -16,10 +16,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
 	title: "AI 激重診断",
 	description:
-		"なたの何気ないメッセージに、激重AIが♡かわいく猟奇的に♡返信します。",
+		"AI彼女があなたにちょっぴり歪んだ愛をぶつけます♡ログイン不要、ブラウザで動くよ！",
 	viewport: "width=device-width, initial-scale=1",
 	icons: {
-		icon: "/favicon.png", // public/favicon.png を参照
+		icon: "/favicon.png?v=2", // public/favicon.png を参照
 	},
 	verification: {
 		google: "gTBau9kCei49KzHb9OaBOrOeYj3Mwd_LCn1sktxJqMY",
