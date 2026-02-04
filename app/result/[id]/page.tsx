@@ -88,8 +88,22 @@ export default async function ResultPage({ params }: Props) {
 						</div>
 					</div>
 				</div>
+{/* ▼ 追加: OGP画像プレビューエリア（区切り線を追加して配置） */}
+				<div className="border-t border-purple-100 pt-4">
+					<OgImagePreview id={result.id} />
+				</div>
 
-				{/* ... (残りの部分はそのまま) ... */}
+				<div className="pt-2 space-y-3">
+					<p className="text-xs text-center text-purple-400 font-bold">
+						あなたの言葉も聞いてみたいな♡
+					</p>
+					<Link
+						href="/"
+						className="block w-full py-4 bg-gradient-to-r from-purple-500 to-pink-400 text-white rounded-2xl font-black hover:opacity-90 transition-all shadow-lg text-center animate-pulse"
+					>
+						自分も試してみる
+					</Link>
+				</div>
 			</div>
 		</main>
 	);
