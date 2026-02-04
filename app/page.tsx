@@ -19,7 +19,7 @@ export async function generateMetadata({
 	const defaultMetadata = {
 		title: "AI 激重彼女",
 		description:
-			"AI彼女があなたにちょっぴり歪んだ愛をぶつけます♡ログイン不要、ブラウザで動くよ！",
+			"あなたの何気ないメッセージに、AI彼女が重すぎる愛をぶつけます♡ヤンデレな「げきおも」AIとのチャット。愛が重すぎる会話を楽しもう。",
 		openGraph: {
 			title: "AI 激重彼女",
 			description: "AI彼女が激重の愛をぶつけます♡",
