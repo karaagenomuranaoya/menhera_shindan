@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
 					>
 						<img
 							src={image_url}
-							alt="Gekiomo Girl"
+							alt=" Girl"
 							style={{
 								width: "280px",
 								height: "280px",

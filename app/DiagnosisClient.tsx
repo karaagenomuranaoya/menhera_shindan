@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import OgImagePreview from "./components/OgImagePreview";
+import RakutenAd from "./components/RakutenAd";
 import TermsModal from "./components/TermsModal";
 
 type ChatResult = {
@@ -475,6 +476,14 @@ export default function DiagnosisClient() {
 									</button>
 								</div>
 							</div>
+							<motion.div
+								initial={{ opacity: 0, y: 10 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{ delay: 2 }} // 少し遅れて表示させて気付かせる
+								className="mt-6 mb-2"
+							>
+								<RakutenAd />
+							</motion.div>
 							{/** biome-ignore lint/a11y/useButtonType: <explanation> */}
 							<button
 								onClick={handleRestart}
